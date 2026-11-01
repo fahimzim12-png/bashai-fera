@@ -1,50 +1,542 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#101211">
-  <title>Bashai Fera — A Dhaka Road Survival Game</title>
+  <meta name="theme-color" content="#FFF8EC">
+  <title>বাসায় ফেরা · Bashai Fera — ঢাকার সড়ক-বাঁচার খেলা</title>
+  <meta name="description" content="Bashai Fera (বাসায় ফেরা) is a Dhaka road-survival browser game and road-safety awareness project. ঢাকার ব্যস্ত রাস্তায় নিরাপদে বাসায় ফেরার খেলা।">
+  <meta property="og:title" content="বাসায় ফেরা · Bashai Fera">
+  <meta property="og:description" content="A Dhaka road-survival game with a road-safety heart.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23FFC83D'/%3E%3Cpath d='M14 34 L32 16 L50 34 V50 H14Z' fill='%23E4472F'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
-  <main class="screen">
-    <div class="topbar">
-      <span class="brand">BF<span class="dot">.</span></span>
-      <span class="edition">A DHAKA ROAD EXPERIENCE</span>
-    </div>
 
-    <section class="hero">
-      <div class="eyebrow">
-        <span class="live-dot"></span>
-        EVERY JOURNEY HAS A STORY
+<!-- ============ NAVIGATION ============ -->
+<header class="nav" id="nav">
+  <div class="container nav-inner">
+    <a class="brand" href="#top" aria-label="বাসায় ফেরা – Bashai Fera">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="19" fill="#FFC83D" stroke="#1F2A44" stroke-width="2.5"/>
+        <path d="M9 21 L20 11 L31 21 V30 H9Z" fill="#E4472F" stroke="#1F2A44" stroke-width="2" stroke-linejoin="round"/>
+        <rect x="16" y="22" width="6" height="8" rx="1" fill="#FFF8EC"/>
+        <circle cx="29" cy="30" r="7" fill="#18B5A4" stroke="#1F2A44" stroke-width="2"/>
+        <circle cx="29" cy="30" r="1.8" fill="#1F2A44"/>
+      </svg>
+      <span class="brand-text">
+        <span class="brand-bn">বাসায় ফেরা</span>
+        <span class="brand-en" lang="en">Bashai Fera</span>
+      </span>
+    </a>
+
+    <nav class="nav-links" aria-label="প্রধান মেনু">
+      <a href="#about">পরিচিতি <span lang="en">About</span></a>
+      <a href="#safety">নিরাপদ সড়ক <span lang="en">Safety</span></a>
+    </nav>
+
+    <button class="btn-small" type="button" data-start>খেলা শুরু করি</button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <!-- decorative floating shapes -->
+    <svg class="deco deco-star" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 L24 15 L38 16 L27 24 L31 38 L20 30 L9 38 L13 24 L2 16 L16 15Z" fill="#FFC83D" stroke="#1F2A44" stroke-width="2.5" stroke-linejoin="round"/></svg>
+    <svg class="deco deco-squiggle" viewBox="0 0 80 24" aria-hidden="true"><path d="M3 12 Q13 0 23 12 T43 12 T63 12 T77 12" fill="none" stroke="#18B5A4" stroke-width="5" stroke-linecap="round"/></svg>
+    <svg class="deco deco-ring" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="14" fill="none" stroke="#FF6B57" stroke-width="7"/></svg>
+
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">
+          <span class="eyebrow-dot" aria-hidden="true"></span>
+          ঢাকার পথে প্রতিদিনের গল্প
+          <span class="eyebrow-en" lang="en">· A Dhaka road-survival game</span>
+        </p>
+
+        <h1 class="h1">
+          <span class="h1-line">জ্যাম, হর্ন আর ভিড় পেরিয়ে</span>
+          <span class="h1-line"><mark class="hl">বাসায় ফেরাই</mark> আসল জয়!</span>
+        </h1>
+
+        <p class="lead-en" lang="en">Dodge the chaos. Respect the road. Make it home.</p>
+
+        <p class="lead-bn">
+          রিকশা, বাস, সিএনজি আর অগণিত মানুষের শহরে প্রতিদিনের পথচলা—
+          সাবধানে এগোও, বিপদ এড়াও, আর নিরাপদ সড়কের বন্ধু হও।
+        </p>
+
+        <div class="cta-row">
+          <button class="btn-primary" type="button" data-start>
+            <span class="btn-text">
+              <span class="btn-bn">খেলা শুরু করি</span>
+              <span class="btn-en" lang="en">Start Journey</span>
+            </span>
+            <span class="btn-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="#E4472F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <a class="btn-link" href="#about">আরও জানি <span lang="en">· Learn more</span></a>
+        </div>
+
+        <ul class="chips" aria-label="খেলায় যা থাকছে">
+          <li class="chip chip-sun"><i></i>রিকশা</li>
+          <li class="chip chip-coral"><i></i>বাস</li>
+          <li class="chip chip-green"><i></i>সিএনজি</li>
+          <li class="chip chip-sky"><i></i>পথচারী</li>
+        </ul>
       </div>
 
-      <h1>BASHAI<br><span>FERA.</span></h1>
-
-      <p class="subtitle">
-        The city never stops moving.<br>
-        Neither can you.
-      </p>
-
-      <button id="startButton" class="start-button">
-        <span id="buttonText">BEGIN YOUR JOURNEY</span>
-        <span class="arrow">↗</span>
-      </button>
-
-      <p id="message" class="message">
-        A road-survival experience inspired by Dhaka.
-      </p>
-    </section>
-
-    <div class="bottom">
-      <span>DHAKA, BANGLADESH</span>
-      <span>GET HOME. THAT'S THE GOAL.</span>
+      <!-- rotating sticker -->
+      <div class="sticker" aria-hidden="true">
+        <svg viewBox="0 0 200 200">
+          <g class="sticker-ring">
+            <circle cx="100" cy="100" r="86" fill="none" stroke="#FFC83D" stroke-width="16" stroke-dasharray="14 10"/>
+            <circle cx="100" cy="100" r="76" fill="#FFC83D"/>
+          </g>
+          <circle cx="100" cy="100" r="66" fill="#fff" stroke="#1F2A44" stroke-width="3"/>
+          <text x="100" y="98" text-anchor="middle" font-size="27" font-weight="700" fill="#1F2A44" font-family="Hind Siliguri, sans-serif">সাবধানে</text>
+          <text x="100" y="128" text-anchor="middle" font-size="27" font-weight="700" fill="#E4472F" font-family="Hind Siliguri, sans-serif">চলি!</text>
+          <text x="100" y="150" text-anchor="middle" font-size="12" font-weight="700" fill="#5A6479" font-family="Bricolage Grotesque, sans-serif" letter-spacing="2">DRIVE SAFE</text>
+        </svg>
+      </div>
     </div>
-  </main>
 
-  <script src="js/main.js"></script>
+    <!-- ============ HERO ILLUSTRATION ============ -->
+    <div class="container">
+      <div class="scene-card">
+        <svg class="scene" viewBox="0 0 1200 580" role="img" aria-label="ঢাকার ব্যস্ত রাস্তার রঙিন ছবি: রিকশা, বাস, সিএনজি, পথচারী আর রঙিন ভবন। Illustration of a busy, colourful Dhaka street." xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#7CCBFF"/>
+              <stop offset=".65" stop-color="#CFEEFF"/>
+              <stop offset="1" stop-color="#FFF1D2"/>
+            </linearGradient>
+            <pattern id="win" width="24" height="30" patternUnits="userSpaceOnUse">
+              <rect x="6" y="8" width="12" height="15" rx="2.5" fill="#FFFFFF" opacity=".8"/>
+            </pattern>
+            <pattern id="awn" width="16" height="12" patternUnits="userSpaceOnUse">
+              <rect width="8" height="12" fill="#E4472F"/>
+              <rect x="8" width="8" height="12" fill="#FFFFFF"/>
+            </pattern>
+          </defs>
+
+          <!-- sky -->
+          <rect width="1200" height="580" fill="url(#sky)"/>
+
+          <!-- sun -->
+          <g transform="translate(1010 104)">
+            <g class="rays" stroke="#FFC83D" stroke-width="8" stroke-linecap="round">
+              <line x1="0" y1="-62" x2="0" y2="-82"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(30)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(60)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(90)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(120)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(150)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(180)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(210)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(240)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(270)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(300)"/>
+              <line x1="0" y1="-62" x2="0" y2="-82" transform="rotate(330)"/>
+            </g>
+            <circle r="48" fill="#FFC83D"/>
+            <circle r="36" fill="#FFD866"/>
+          </g>
+
+          <!-- clouds -->
+          <g transform="translate(0 70)"><g class="cloud c1" fill="#fff" opacity=".92">
+            <circle cx="0" cy="0" r="20"/><circle cx="26" cy="-12" r="26"/><circle cx="58" cy="0" r="20"/><rect x="-20" y="0" width="98" height="20" rx="10"/>
+          </g></g>
+          <g transform="translate(0 150)"><g class="cloud c2" fill="#fff" opacity=".85">
+            <circle cx="0" cy="0" r="14"/><circle cx="20" cy="-9" r="19"/><circle cx="44" cy="0" r="14"/><rect x="-14" y="0" width="72" height="14" rx="7"/>
+          </g></g>
+          <g transform="translate(0 40)"><g class="cloud c3" fill="#fff" opacity=".8">
+            <circle cx="0" cy="0" r="16"/><circle cx="22" cy="-10" r="22"/><circle cx="48" cy="0" r="16"/><rect x="-16" y="0" width="80" height="16" rx="8"/>
+          </g></g>
+
+          <!-- kite (ঘুড়ি) -->
+          <g transform="translate(300 96)">
+            <g class="kite">
+              <path d="M0 -30 L20 0 L0 34 L-20 0Z" fill="#FF6B57" stroke="#1F2A44" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M0 -30 V34 M-20 0 H20" stroke="#fff" stroke-width="2"/>
+              <path d="M0 34 Q-12 52 4 64 Q18 76 2 94" fill="none" stroke="#1F2A44" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M-4 52 l-8 -3 l2 8Z M6 70 l8 -3 l-2 9Z" fill="#FFC83D" stroke="#1F2A44" stroke-width="1.5" stroke-linejoin="round"/>
+            </g>
+          </g>
+
+          <!-- far skyline -->
+          <g fill="#BFE0F4">
+            <rect x="40" y="130" width="64" height="260" rx="6"/>
+            <rect x="372" y="170" width="48" height="220" rx="6"/>
+            <rect x="612" y="120" width="48" height="270" rx="6"/>
+            <rect x="900" y="190" width="48" height="200" rx="6"/>
+          </g>
+
+          <!-- buildings -->
+          <g>
+            <rect x="0" y="180" width="144" height="210" fill="#FF6B57"/>
+            <rect x="144" y="120" width="96" height="270" fill="#18B5A4"/>
+            <rect x="240" y="210" width="144" height="180" fill="#FFC83D"/>
+            <rect x="408" y="150" width="120" height="240" fill="#58B7F2"/>
+            <rect x="528" y="210" width="96" height="180" fill="#FF9A3D"/>
+            <rect x="648" y="90" width="144" height="300" fill="#4CC38A"/>
+            <rect x="792" y="180" width="120" height="210" fill="#FF8A73"/>
+            <rect x="936" y="150" width="96" height="240" fill="#3CCBBB"/>
+            <rect x="1032" y="210" width="168" height="180" fill="#FFAA3B"/>
+          </g>
+          <!-- roof ledges -->
+          <g fill="#1F2A44" opacity=".14">
+            <rect x="0" y="180" width="144" height="8"/><rect x="144" y="120" width="96" height="8"/>
+            <rect x="240" y="210" width="144" height="8"/><rect x="408" y="150" width="120" height="8"/>
+            <rect x="528" y="210" width="96" height="8"/><rect x="648" y="90" width="144" height="8"/>
+            <rect x="792" y="180" width="120" height="8"/><rect x="936" y="150" width="96" height="8"/>
+            <rect x="1032" y="210" width="168" height="8"/>
+          </g>
+          <!-- windows -->
+          <g fill="url(#win)">
+            <rect x="0" y="180" width="144" height="180"/>
+            <rect x="144" y="120" width="96" height="240"/>
+            <rect x="240" y="210" width="144" height="150"/>
+            <rect x="408" y="150" width="120" height="210"/>
+            <rect x="528" y="210" width="96" height="150"/>
+            <rect x="648" y="90" width="144" height="270"/>
+            <rect x="792" y="180" width="120" height="180"/>
+            <rect x="936" y="150" width="96" height="210"/>
+            <rect x="1032" y="210" width="168" height="150"/>
+          </g>
+
+          <!-- rooftop details -->
+          <path d="M192 120 V92" stroke="#1F2A44" stroke-width="3"/>
+          <circle cx="192" cy="90" r="4" fill="#FF6B57"/>
+          <rect x="702" y="66" width="40" height="24" rx="6" fill="#A5673F"/>
+          <rect x="700" y="62" width="44" height="6" rx="3" fill="#7E4A2B"/>
+          <path d="M552 210 V192 M600 210 V192" stroke="#1F2A44" stroke-width="3"/>
+          <rect x="532" y="158" width="88" height="34" rx="8" fill="#FFF8EC" stroke="#1F2A44" stroke-width="3"/>
+          <text x="576" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#E4472F" font-family="Hind Siliguri, sans-serif">ভালোবাসি ঢাকা</text>
+
+          <!-- shopfronts -->
+          <g fill="#1F2A44" opacity=".28">
+            <rect x="16" y="368" width="112" height="22"/><rect x="160" y="368" width="64" height="22"/>
+            <rect x="256" y="368" width="112" height="22"/><rect x="432" y="368" width="80" height="22"/>
+            <rect x="544" y="368" width="64" height="22"/><rect x="672" y="368" width="96" height="22"/>
+            <rect x="816" y="368" width="64" height="22"/><rect x="944" y="368" width="64" height="22"/>
+            <rect x="1056" y="368" width="128" height="22"/>
+          </g>
+          <g fill="url(#awn)">
+            <rect x="16" y="356" width="112" height="12"/><rect x="160" y="356" width="64" height="12"/>
+            <rect x="256" y="356" width="112" height="12"/><rect x="432" y="356" width="80" height="12"/>
+            <rect x="544" y="356" width="64" height="12"/><rect x="672" y="356" width="96" height="12"/>
+            <rect x="816" y="356" width="64" height="12"/><rect x="944" y="356" width="64" height="12"/>
+            <rect x="1056" y="356" width="128" height="12"/>
+          </g>
+          <g font-family="Hind Siliguri, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">
+            <text x="72" y="384">চা-নাস্তা</text>
+            <text x="720" y="384">ফার্মেসি</text>
+            <text x="1120" y="384">মিষ্টি ঘর</text>
+          </g>
+
+          <!-- footpath and kerb -->
+          <rect x="0" y="390" width="1200" height="24" fill="#FFE9BF"/>
+          <rect x="0" y="414" width="1200" height="8" fill="#FF9A3D"/>
+
+          <!-- trees -->
+          <g>
+            <rect x="394" y="326" width="8" height="66" rx="3" fill="#8A5A3C"/>
+            <circle cx="398" cy="312" r="32" fill="#3FB07A"/><circle cx="386" cy="304" r="16" fill="#62CF98"/>
+            <rect x="634" y="326" width="8" height="66" rx="3" fill="#8A5A3C"/>
+            <circle cx="638" cy="312" r="32" fill="#3FB07A"/><circle cx="626" cy="304" r="16" fill="#62CF98"/>
+            <rect x="920" y="336" width="8" height="56" rx="3" fill="#8A5A3C"/>
+            <circle cx="924" cy="322" r="30" fill="#3FB07A"/><circle cx="913" cy="314" r="15" fill="#62CF98"/>
+          </g>
+
+          <!-- street lamps -->
+          <g stroke="#1F2A44" stroke-width="5" stroke-linecap="round" fill="none">
+            <path d="M330 396 V312 Q330 298 344 298 H360"/>
+            <path d="M1010 396 V312 Q1010 298 996 298 H980"/>
+          </g>
+          <rect x="356" y="294" width="24" height="9" rx="4.5" fill="#FFC83D" stroke="#1F2A44" stroke-width="2"/>
+          <rect x="962" y="294" width="24" height="9" rx="4.5" fill="#FFC83D" stroke="#1F2A44" stroke-width="2"/>
+
+          <!-- traffic signal -->
+          <rect x="682" y="304" width="6" height="92" fill="#1F2A44"/>
+          <rect x="668" y="262" width="34" height="68" rx="9" fill="#1F2A44"/>
+          <circle class="sig-red" cx="685" cy="279" r="8" fill="#FF4D4D"/>
+          <circle cx="685" cy="296" r="8" fill="#FFC83D" opacity=".35"/>
+          <circle class="sig-green" cx="685" cy="313" r="8" fill="#4CC38A"/>
+
+          <!-- road -->
+          <rect x="0" y="422" width="1200" height="158" fill="#4A5A72"/>
+          <rect x="0" y="422" width="1200" height="10" fill="#3E4D63"/>
+          <line x1="0" y1="510" x2="1200" y2="510" stroke="#FFD84D" stroke-width="6" stroke-dasharray="40 30"/>
+          <g fill="#fff" opacity=".88">
+            <rect x="548" y="436" width="14" height="136" rx="3"/>
+            <rect x="572" y="436" width="14" height="136" rx="3"/>
+            <rect x="596" y="436" width="14" height="136" rx="3"/>
+            <rect x="620" y="436" width="14" height="136" rx="3"/>
+          </g>
+          <text x="900" y="552" font-size="26" font-weight="700" fill="#fff" opacity=".45" letter-spacing="2" font-family="Hind Siliguri, sans-serif">ধীরে চলো</text>
+
+          <!-- pedestrians -->
+          <!-- child with school bag -->
+          <g transform="translate(300 410) scale(.78)">
+            <g class="walker" style="animation-delay:-.3s">
+              <rect x="-15" y="-50" width="10" height="24" rx="4" fill="#FFC83D"/>
+              <rect x="-8" y="-24" width="6" height="24" rx="3" fill="#2B3A67"/>
+              <rect x="2" y="-24" width="6" height="24" rx="3" fill="#2B3A67"/>
+              <rect x="-11" y="-52" width="22" height="32" rx="9" fill="#FF6B57"/>
+              <circle cx="0" cy="-62" r="10" fill="#E2A978"/>
+              <path d="M-10 -64 Q-8 -76 2 -73 Q10 -72 10 -64 Q4 -69 -10 -64Z" fill="#1F2A44"/>
+            </g>
+          </g>
+          <!-- woman waiting at the crossing, with speech bubble -->
+          <g transform="translate(528 410) scale(.9)">
+            <g class="walker" style="animation-delay:-.7s">
+              <rect x="-8" y="-9" width="5" height="9" rx="2" fill="#C68A5B"/>
+              <rect x="3" y="-9" width="5" height="9" rx="2" fill="#C68A5B"/>
+              <path d="M-12 -54 L12 -54 L17 -8 L-17 -8Z" fill="#18B5A4"/>
+              <path d="M-12 -54 L12 -54 L14 -40 L-14 -34Z" fill="#FF6B57"/>
+              <circle cx="0" cy="-64" r="10" fill="#C68A5B"/>
+              <path d="M-11 -64 Q-10 -78 2 -76 Q12 -74 11 -62 Q8 -70 -2 -70 Q-8 -68 -11 -64Z" fill="#1F2A44"/>
+              <circle cx="-10" cy="-70" r="5" fill="#1F2A44"/>
+            </g>
+            <g>
+              <rect x="-58" y="-126" width="116" height="32" rx="13" fill="#fff" stroke="#1F2A44" stroke-width="2.5"/>
+              <path d="M-7 -94 L0 -84 L7 -94Z" fill="#fff" stroke="#1F2A44" stroke-width="2.5" stroke-linejoin="round"/>
+              <rect x="-8" y="-95" width="16" height="3" fill="#fff"/>
+              <text x="0" y="-104" text-anchor="middle" font-size="14" font-weight="700" fill="#1F2A44" font-family="Hind Siliguri, sans-serif">দেখে পার হই!</text>
+            </g>
+          </g>
+          <!-- man with umbrella -->
+          <g transform="translate(850 410) scale(.9)">
+            <g class="walker" style="animation-delay:-.5s">
+              <rect x="-8" y="-26" width="7" height="26" rx="3" fill="#1F2A44"/>
+              <rect x="1" y="-26" width="7" height="26" rx="3" fill="#1F2A44"/>
+              <rect x="-12" y="-54" width="24" height="32" rx="9" fill="#58B7F2"/>
+              <circle cx="0" cy="-64" r="10" fill="#C68A5B"/>
+              <path d="M-10 -66 Q-8 -77 2 -75 Q10 -74 10 -66 Q4 -71 -10 -66Z" fill="#1F2A44"/>
+              <path d="M6 -46 H14" stroke="#C68A5B" stroke-width="5" stroke-linecap="round"/>
+              <path d="M14 -80 V-44" stroke="#1F2A44" stroke-width="3" stroke-linecap="round"/>
+              <path d="M-20 -80 Q14 -122 48 -80 Q31 -88 14 -80 Q-3 -88 -20 -80Z" fill="#FF9A3D" stroke="#1F2A44" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M14 -104 V-80" stroke="#1F2A44" stroke-width="2"/>
+            </g>
+          </g>
+
+          <!-- BUS (back lane) -->
+          <g transform="translate(0 376)">
+            <g class="drive bus">
+              <rect x="104" y="-10" width="52" height="14" rx="3" fill="#1F2A44"/>
+              <text x="130" y="0.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#FFC83D" font-family="Hind Siliguri, sans-serif">মতিঝিল</text>
+              <rect width="260" height="96" rx="16" fill="#FF6B57"/>
+              <rect y="56" width="260" height="14" fill="#FFC83D"/>
+              <text x="120" y="67" text-anchor="middle" font-size="11" font-weight="700" fill="#8A2A12" font-family="Hind Siliguri, sans-serif">ঢাকা পরিবহন</text>
+              <rect y="84" width="260" height="12" rx="4" fill="#C93A27"/>
+              <g fill="#D9F2FF">
+                <rect x="14" y="14" width="34" height="32" rx="6"/>
+                <rect x="56" y="14" width="34" height="32" rx="6"/>
+                <rect x="98" y="14" width="34" height="32" rx="6"/>
+                <rect x="140" y="14" width="34" height="32" rx="6"/>
+                <rect x="182" y="14" width="34" height="32" rx="6"/>
+                <rect x="222" y="14" width="28" height="40" rx="8"/>
+              </g>
+              <circle cx="31" cy="31" r="7" fill="#E2A978"/>
+              <circle cx="115" cy="31" r="7" fill="#C68A5B"/>
+              <circle cx="157" cy="31" r="7" fill="#E2A978"/>
+              <circle cx="236" cy="36" r="7" fill="#C68A5B"/>
+              <circle cx="252" cy="76" r="6" fill="#FFF3B0"/>
+              <rect x="246" y="88" width="14" height="6" rx="3" fill="#1F2A44"/>
+              <g class="wheel"><circle cx="56" cy="96" r="18" fill="#1F2A44"/><circle cx="56" cy="96" r="9" fill="#E9EEF3"/><path d="M56 88 V104 M48 96 H64" stroke="#8A93A6" stroke-width="3"/></g>
+              <g class="wheel"><circle cx="200" cy="96" r="18" fill="#1F2A44"/><circle cx="200" cy="96" r="9" fill="#E9EEF3"/><path d="M200 88 V104 M192 96 H208" stroke="#8A93A6" stroke-width="3"/></g>
+              <g class="honk" transform="translate(170 -44)">
+                <rect width="86" height="28" rx="11" fill="#fff" stroke="#1F2A44" stroke-width="2.5"/>
+                <text x="43" y="19" text-anchor="middle" font-size="14" font-weight="700" fill="#E4472F" font-family="Hind Siliguri, sans-serif">পিঁপ পিঁপ!</text>
+              </g>
+            </g>
+          </g>
+
+          <!-- CNG AUTO (middle lane) -->
+          <g transform="translate(0 444)">
+            <g class="drive cng">
+              <path d="M0 70 V38 Q0 8 30 8 H70 Q98 10 106 40 L110 66 Q110 74 102 74 H6 Q0 74 0 70Z" fill="#4CC38A"/>
+              <path d="M0 52 H108 L110 62 H0Z" fill="#FFC83D"/>
+              <rect x="12" y="16" width="42" height="26" rx="6" fill="#D9F2FF"/>
+              <path d="M26 16 V42 M40 16 V42" stroke="#4CC38A" stroke-width="2"/>
+              <rect x="62" y="14" width="32" height="28" rx="8" fill="#D9F2FF"/>
+              <circle cx="78" cy="30" r="8" fill="#C68A5B"/>
+              <circle cx="106" cy="58" r="5" fill="#FFF3B0"/>
+              <g class="wheel"><circle cx="26" cy="76" r="14" fill="#1F2A44"/><circle cx="26" cy="76" r="7" fill="#E9EEF3"/><path d="M26 70 V82 M20 76 H32" stroke="#8A93A6" stroke-width="2.5"/></g>
+              <g class="wheel"><circle cx="88" cy="76" r="14" fill="#1F2A44"/><circle cx="88" cy="76" r="7" fill="#E9EEF3"/><path d="M88 70 V82 M82 76 H94" stroke="#8A93A6" stroke-width="2.5"/></g>
+              <g class="honk" transform="translate(34 -30)">
+                <rect width="70" height="26" rx="10" fill="#fff" stroke="#1F2A44" stroke-width="2.5"/>
+                <text x="35" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#18907F" font-family="Hind Siliguri, sans-serif">পুঁ পুঁ!</text>
+              </g>
+            </g>
+          </g>
+
+          <!-- RICKSHAW (front lane) -->
+          <g transform="translate(0 450)">
+            <g class="drive rickshaw">
+              <path d="M8 60 Q8 14 48 14 Q88 14 90 60 Z" fill="#FFC83D"/>
+              <path d="M48 14 V60 M28 20 L26 60 M68 20 L70 60" stroke="#E4472F" stroke-width="3" fill="none"/>
+              <path d="M8 60 Q8 14 48 14 Q88 14 90 60" stroke="#E4472F" stroke-width="4" fill="none"/>
+              <rect x="10" y="58" width="78" height="26" rx="8" fill="#18B5A4"/>
+              <circle cx="28" cy="71" r="6" fill="#FF6B57"/><circle cx="28" cy="71" r="2.5" fill="#FFC83D"/>
+              <circle cx="49" cy="71" r="6" fill="#FFC83D"/><circle cx="49" cy="71" r="2.5" fill="#FF6B57"/>
+              <circle cx="70" cy="71" r="6" fill="#FF6B57"/><circle cx="70" cy="71" r="2.5" fill="#FFC83D"/>
+              <path d="M88 84 L118 84 L130 100 M118 84 L106 100" stroke="#1F2A44" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M130 100 L122 64 M114 62 L132 60" stroke="#1F2A44" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <rect x="100" y="66" width="16" height="5" rx="2" fill="#1F2A44"/>
+              <path d="M105 70 L116 92" stroke="#2B3A67" stroke-width="6" stroke-linecap="round"/>
+              <path d="M108 54 L106 70" stroke="#FF6B57" stroke-width="14" stroke-linecap="round"/>
+              <path d="M110 55 L122 62" stroke="#FF6B57" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="108" cy="40" r="9" fill="#C68A5B"/>
+              <path d="M99 38 Q108 24 117 38 Q108 32 99 38Z" fill="#1F2A44"/>
+              <g class="wheel"><circle cx="46" cy="96" r="22" fill="#1F2A44"/><circle cx="46" cy="96" r="12" fill="#E9EEF3"/><path d="M46 86 V106 M36 96 H56" stroke="#8A93A6" stroke-width="3"/><circle cx="46" cy="96" r="3" fill="#FF6B57"/></g>
+              <g class="wheel"><circle cx="130" cy="100" r="18" fill="#1F2A44"/><circle cx="130" cy="100" r="9" fill="#E9EEF3"/><path d="M130 92 V108 M122 100 H138" stroke="#8A93A6" stroke-width="3"/><circle cx="130" cy="100" r="2.5" fill="#FF6B57"/></g>
+              <g class="honk" transform="translate(60 -14)">
+                <rect width="76" height="26" rx="10" fill="#fff" stroke="#1F2A44" stroke-width="2.5"/>
+                <text x="38" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#E4472F" font-family="Hind Siliguri, sans-serif">টুং টুং!</text>
+              </g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <p class="scene-caption"><span>ঢাকার একটি সাধারণ দিন</span> <span lang="en">— hover over a vehicle to hear it honk.</span></p>
+    </div>
+  </section>
+
+  <!-- ============ ABOUT ============ -->
+  <section class="section about" id="about">
+    <div class="container about-grid">
+      <div class="about-text reveal">
+        <p class="kicker">পরিচিতি <span lang="en">· About</span></p>
+        <h2 class="h2">বাসায় ফেরা কী?</h2>
+        <p class="h2-en" lang="en">What is Bashai Fera?</p>
+        <p class="body-bn">
+          ‘বাসায় ফেরা’ একটি ব্রাউজার-ভিত্তিক খেলা, যেখানে তুমি ঢাকার ব্যস্ত রাস্তায় রিকশা, বাস আর সিএনজির ভিড় পেরিয়ে
+          নিরাপদে বাসায় ফেরার চেষ্টা করবে। খেলার ছলে চেনা পথের ঝুঁকিগুলোকে নতুন করে দেখাই আমাদের উদ্দেশ্য।
+        </p>
+        <p class="body-en" lang="en">
+          Bashai Fera (“getting home”) is a browser game set on the streets of Dhaka. Weave through rickshaws,
+          buses and crowds, spot the hazards, and make it home safe — a playful reminder of how much road safety matters.
+        </p>
+      </div>
+
+      <div class="cards">
+        <article class="card card-sun reveal" style="--d:.05s">
+          <div class="card-icon">
+            <svg viewBox="0 0 56 56" aria-hidden="true">
+              <rect x="18" y="6" width="20" height="44" rx="8" fill="#1F2A44"/>
+              <circle cx="28" cy="17" r="5" fill="#FF6B57"/><circle cx="28" cy="28" r="5" fill="#FFC83D"/><circle cx="28" cy="39" r="5" fill="#4CC38A"/>
+            </svg>
+          </div>
+          <div>
+            <h3>ঢাকার পথ <span lang="en">The streets of Dhaka</span></h3>
+            <p>রিকশা, বাস, সিএনজি, মোটরসাইকেল—প্রতিদিনের চেনা ভিড় পেরিয়ে এগিয়ে চলো।</p>
+          </div>
+        </article>
+
+        <article class="card card-coral reveal" style="--d:.15s">
+          <div class="card-icon">
+            <svg viewBox="0 0 56 56" aria-hidden="true">
+              <path d="M28 6 L52 48 H4Z" fill="#FFC83D" stroke="#1F2A44" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M28 20 V34" stroke="#1F2A44" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="28" cy="41" r="2.6" fill="#1F2A44"/>
+            </svg>
+          </div>
+          <div>
+            <h3>বিপদ এড়াও <span lang="en">Dodge the hazards</span></h3>
+            <p>হঠাৎ ব্রেক, খোলা ম্যানহোল, উল্টো পথে আসা গাড়ি—সতর্ক থাকলেই নিরাপদ।</p>
+          </div>
+        </article>
+
+        <article class="card card-teal reveal" style="--d:.25s">
+          <div class="card-icon">
+            <svg viewBox="0 0 56 56" aria-hidden="true">
+              <path d="M6 28 L28 8 L50 28 V50 H6Z" fill="#FF6B57" stroke="#1F2A44" stroke-width="3" stroke-linejoin="round"/>
+              <rect x="22" y="32" width="12" height="18" rx="2" fill="#FFC83D" stroke="#1F2A44" stroke-width="2.5"/>
+            </svg>
+          </div>
+          <div>
+            <h3>নিরাপদে ঘরে ফেরো <span lang="en">Make it home</span></h3>
+            <p>প্রতিটি যাত্রার শেষ লক্ষ্য একটাই—সুস্থ শরীরে, হাসিমুখে বাসায় ফেরা।</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ FOOTER / ROAD SAFETY ============ -->
+<div class="wave" aria-hidden="true">
+  <svg viewBox="0 0 1440 80" preserveAspectRatio="none"><path d="M0 40 C240 90 480 0 720 40 C960 80 1200 10 1440 40 V80 H0Z" fill="#FFEFB8"/></svg>
+</div>
+
+<footer class="footer" id="safety">
+  <div class="container footer-grid">
+    <div class="footer-purpose reveal">
+      <p class="kicker kicker-light">নিরাপদ সড়ক <span lang="en">· Road safety</span></p>
+      <h2 class="h2 h2-footer">সাবধানে চলি, সবাই মিলে বাঁচি</h2>
+      <p class="body-bn">
+        বাসায় ফেরা শুধু একটি খেলা নয়—এটি সড়ক-নিরাপত্তা সচেতনতার একটি উদ্যোগ। আমরা চাই খেলার মধ্য দিয়ে
+        পথচারী, চালক ও যাত্রী সবাই নিজের ও অন্যের নিরাপত্তা নিয়ে একটু বেশি ভাবুক।
+      </p>
+      <p class="body-en" lang="en">
+        Bashai Fera is a road-safety awareness project. It is a game, not a driving guide —
+        in real life, always follow traffic rules and look out for one another.
+      </p>
+    </div>
+
+    <ul class="tips">
+      <li class="tip reveal" style="--d:.05s">
+        <span class="tip-icon tint-coral">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><g fill="#1F2A44"><rect x="8" y="10" width="6" height="28" rx="2"/><rect x="18" y="10" width="6" height="28" rx="2"/><rect x="28" y="10" width="6" height="28" rx="2"/><rect x="38" y="10" width="4" height="28" rx="2"/></g></svg>
+        </span>
+        <span>জেব্রা ক্রসিং দিয়ে রাস্তা পার হই<small lang="en">Use the zebra crossing</small></span>
+      </li>
+      <li class="tip reveal" style="--d:.12s">
+        <span class="tip-icon tint-sky">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 31 Q7 11 24 11 Q41 11 41 31 V35 H7Z" fill="#FF6B57" stroke="#1F2A44" stroke-width="3" stroke-linejoin="round"/><rect x="7" y="27" width="34" height="6" fill="#fff" stroke="#1F2A44" stroke-width="2.5"/></svg>
+        </span>
+        <span>মোটরসাইকেলে হেলমেট পরি<small lang="en">Wear a helmet</small></span>
+      </li>
+      <li class="tip reveal" style="--d:.19s">
+        <span class="tip-icon tint-green">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="15" y="8" width="18" height="32" rx="4" fill="none" stroke="#1F2A44" stroke-width="3"/><path d="M8 40 L40 8" stroke="#E4472F" stroke-width="4" stroke-linecap="round"/></svg>
+        </span>
+        <span>রাস্তা পার হওয়ার সময় ফোন নয়<small lang="en">No phone while crossing</small></span>
+      </li>
+      <li class="tip reveal" style="--d:.26s">
+        <span class="tip-icon tint-sun">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 37 H13 V22 H35 V37 H43" fill="none" stroke="#1F2A44" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="10" y="14" width="28" height="7" rx="3.5" fill="#18B5A4" stroke="#1F2A44" stroke-width="2.5"/></svg>
+        </span>
+        <span>ফুটওভারব্রিজ ব্যবহার করি<small lang="en">Use the footbridge</small></span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="container footer-bottom">
+    <div class="footer-brand">
+      <strong>বাসায় ফেরা</strong> <span lang="en">Bashai Fera</span>
+    </div>
+    <p>© <span id="year">2026</span> · ঢাকা, বাংলাদেশ <span lang="en">· All illustrations are original SVG artwork.</span></p>
+  </div>
+</footer>
+
+<!-- Start-button placeholder message -->
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <strong>খেলাটি শিগগিরই আসছে!</strong>
+  <span lang="en">Game coming soon — the road is still being built.</span>
+</div>
+
+<script src="js/landing.js" defer></script>
 </body>
 </html>
-
