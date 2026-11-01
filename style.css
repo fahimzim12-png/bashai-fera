@@ -1,1 +1,166 @@
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #101211;
+  color: #f0eee7;
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+.screen {
+  min-height: 100vh;
+  padding: 34px 7%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 75% 45%, #27332b 0%, transparent 48%),
+    linear-gradient(135deg, #101211 35%, #18221c 100%);
+}
+
+.screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.12;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    #ffffff 4px
+  );
+}
+
+.topbar,
+.bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.brand {
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: -2px;
+}
+
+.dot {
+  color: #d4f36a;
+}
+
+.edition,
+.bottom {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #a4aaa1;
+}
+
+.hero {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+  margin: 65px 0;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #c2c9bc;
+  margin-bottom: 24px;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d4f36a;
+  margin-right: 9px;
+}
+
+h1 {
+  font-size: clamp(76px, 15vw, 170px);
+  line-height: 0.78;
+  letter-spacing: -10px;
+  font-weight: 900;
+}
+
+h1 span {
+  color: #d4f36a;
+}
+
+.subtitle {
+  margin-top: 35px;
+  color: #c1c6bd;
+  font-size: clamp(16px, 2vw, 20px);
+  line-height: 1.7;
+}
+
+.start-button {
+  margin-top: 38px;
+  padding: 18px 23px;
+  background: #d4f36a;
+  color: #11150f;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 35px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.start-button:hover {
+  transform: translateY(-3px);
+  background: #e2ff83;
+}
+
+.arrow {
+  font-size: 19px;
+}
+
+.message {
+  color: #899087;
+  font-size: 12px;
+  margin-top: 17px;
+  letter-spacing: 0.3px;
+}
+
+.bottom {
+  padding-top: 20px;
+  border-top: 1px solid #384039;
+}
+
+@media (max-width: 600px) {
+  .screen {
+    padding: 25px 7%;
+  }
+
+  h1 {
+    letter-spacing: -5px;
+  }
+
+  .edition {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+
+  .bottom {
+    font-size: 8px;
+    letter-spacing: 1px;
+    gap: 15px;
+  }
+}
+
