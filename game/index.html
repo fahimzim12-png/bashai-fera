@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#E8C9A2">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>বাসায় ফেরা · Bashai Fera — খেলুন</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23FFC83D'/%3E%3Cpath d='M14 34 L32 16 L50 34 V50 H14Z' fill='%23E4472F'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="game.css">
+
+  <!-- Three.js lives in /vendor (pinned copy). The import map lets our code write: import * as THREE from 'three' -->
+  <script type="importmap">
+  { "imports": { "three": "../vendor/three/three.module.js" } }
+  </script>
+</head>
+<body>
+<div id="app">
+  <canvas id="gl" aria-label="বাসায় ফেরা — ৩ডি খেলা / Bashai Fera 3D game"></canvas>
+
+  <!-- ===== In-game HUD ===== -->
+  <div id="hud" class="hud" hidden>
+    <div class="hud-card">
+      <div class="hud-place">
+        <span id="hud-place-bn" class="hud-bn">ফার্মগেট</span>
+        <span id="hud-place-en" class="hud-en" lang="en">Farmgate</span>
+      </div>
+      <div id="hud-bar" class="hud-bar"><div id="hud-bar-fill" class="hud-bar-fill"></div></div>
+      <div class="hud-meta"><span id="hud-dist">০</span> / <span id="hud-total"></span></div>
+    </div>
+    <div class="hud-buttons">
+      <button id="btn-fs" class="round-btn" type="button" data-action="fullscreen" aria-label="ফুলস্ক্রিন / Fullscreen" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button id="btn-pause" class="round-btn" type="button" data-action="pause" aria-label="বিরতি / Pause">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="touch-hint" class="touch-hint" aria-hidden="true">
+      <div class="zone zone-l"><span><svg viewBox="0 0 24 24" width="30" height="30"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      <div class="zone zone-r"><span><svg viewBox="0 0 24 24" width="30" height="30"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+    </div>
+  </div>
+
+  <!-- ===== Loading ===== -->
+  <section id="ov-loading" class="overlay overlay-solid" aria-live="polite">
+    <div class="loading-box">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="19" fill="#FFC83D" stroke="#1F2A44" stroke-width="2.5"/>
+        <path d="M9 21 L20 11 L31 21 V30 H9Z" fill="#E4472F" stroke="#1F2A44" stroke-width="2" stroke-linejoin="round"/>
+        <rect x="16" y="22" width="6" height="8" rx="1" fill="#FFF8EC"/>
+        <circle cx="29" cy="30" r="7" fill="#18B5A4" stroke="#1F2A44" stroke-width="2"/>
+        <circle cx="29" cy="30" r="1.8" fill="#1F2A44"/>
+      </svg>
+      <h1 class="brand-title">বাসায় ফেরা</h1>
+      <p class="brand-sub" lang="en">Bashai Fera</p>
+      <div class="load-track"><div id="load-fill" class="load-fill"></div></div>
+      <p id="load-text" class="load-text">লোড হচ্ছে…</p>
+      <p class="load-text-en" lang="en">Loading…</p>
+    </div>
+  </section>
+
+  <!-- ===== Ready (tap to start: also unlocks audio on phones, later) ===== -->
+  <section id="ov-ready" class="overlay" hidden>
+    <div class="panel">
+      <p class="kicker">আজকের পথ <span lang="en">· Today’s route</span></p>
+      <h2 id="ready-title-bn" class="panel-title">…</h2>
+      <p id="ready-title-en" class="panel-en" lang="en">…</p>
+      <p class="how"><span>কম্পিউটারে: <b>← →</b> বা <b>A D</b> চাপুন।</span> <span>ফোনে: স্ক্রিনের <b>বাঁ</b> বা <b>ডান</b> পাশ ধরে রাখুন।</span></p>
+      <p class="how how-en" lang="en">Computer: ← → or A D. Phone: hold the left or right side of the screen. You walk forward by yourself.</p>
+      <button class="btn-primary" type="button" data-action="start">
+        <span class="btn-text"><span class="btn-bn">যাত্রা শুরু করি</span><span class="btn-en" lang="en">Start the journey</span></span>
+      </button>
+      <p class="portrait-tip">📱 ফোন আড়াআড়ি ধরলে রাস্তা আরও ভালো দেখা যায়। <span lang="en">Turn your phone sideways for a wider view.</span></p>
+      <p id="ready-note" class="note"></p>
+      <a class="home-link" href="../">← মূল পাতা <span lang="en">Home</span></a>
+    </div>
+  </section>
+
+  <!-- ===== Paused ===== -->
+  <section id="ov-pause" class="overlay" hidden>
+    <div class="panel">
+      <h2 class="panel-title">বিরতি</h2>
+      <p class="panel-en" lang="en">Paused</p>
+      <div class="btn-col">
+        <button class="btn-primary" type="button" data-action="resume"><span class="btn-text"><span class="btn-bn">চালিয়ে যাই</span><span class="btn-en" lang="en">Resume</span></span></button>
+        <button class="btn-secondary" type="button" data-action="restart">আবার শুরু <span lang="en">Restart</span></button>
+        <a class="home-link" href="../">মূল পাতা <span lang="en">Home</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Route end (milestone placeholder) ===== -->
+  <section id="ov-end" class="overlay" hidden>
+    <div class="panel">
+      <p class="kicker">পথ শেষ <span lang="en">· End of route</span></p>
+      <h2 class="panel-title">সার্ক ফোয়ারায় পৌঁছেছেন</h2>
+      <p class="panel-en" lang="en">You reached the SAARC Fountain.</p>
+      <p class="note">এটি পরীক্ষামূলক সংস্করণ। গাড়ি-ঘোড়া ও বিপদ আসছে পরের ধাপে।<br><span lang="en">This is the foundation milestone. Traffic and hazards arrive in the next one.</span></p>
+      <div class="btn-col">
+        <button class="btn-primary" type="button" data-action="restart"><span class="btn-text"><span class="btn-bn">আবার হাঁটি</span><span class="btn-en" lang="en">Walk again</span></span></button>
+        <a class="home-link" href="../">মূল পাতা <span lang="en">Home</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Graphics context lost ===== -->
+  <section id="ov-context" class="overlay" hidden>
+    <div class="panel">
+      <h2 class="panel-title">গ্রাফিক্স থেমে গেছে</h2>
+      <p class="panel-en" lang="en">Graphics were interrupted by the device. Waiting for them to come back…</p>
+    </div>
+  </section>
+
+  <pre id="debug" class="debug" hidden></pre>
+</div>
+
+<!-- ===== Fatal error screen (shown if the game cannot start; useful on phones with no console) ===== -->
+<div id="fatal" class="fatal" hidden>
+  <div class="panel">
+    <h2 class="panel-title" id="fatal-title">কিছু একটা ভুল হয়েছে</h2>
+    <p class="panel-en" lang="en" id="fatal-title-en">Something went wrong.</p>
+    <p id="fatal-msg" class="note"></p>
+    <pre id="fatal-detail" class="fatal-detail"></pre>
+    <a class="home-link" href="../">← মূল পাতা <span lang="en">Home</span></a>
+  </div>
+</div>
+
+<script>
+  // Classic (non-module) script: it must work even when the module/graphics code cannot.
+  (function () {
+    var shown = false;
+    window.__bfFatal = function (kind, err) {
+      if (shown) return; shown = true;
+      var msgs = {
+        webgl: 'আপনার ব্রাউজারে ৩ডি (WebGL) চালু নেই। Chrome বা Firefox-এর নতুন সংস্করণে চেষ্টা করুন। / WebGL is not available in this browser.',
+        browser: 'এই ব্রাউজারটি পুরনো। অনুগ্রহ করে Chrome, Edge, Firefox বা Safari-র নতুন সংস্করণ ব্যবহার করুন। / This browser is too old (import maps are required).',
+        load: 'খেলার একটি ফাইল লোড হয়নি। পাতাটি রিফ্রেশ করুন (Ctrl+Shift+R)। / A game file failed to load. Refresh the page.',
+        error: 'অপ্রত্যাশিত সমস্যা হয়েছে। / An unexpected error occurred.'
+      };
+      document.getElementById('fatal-msg').textContent = msgs[kind] || msgs.error;
+      document.getElementById('fatal-detail').textContent = err ? String(err.stack || err.message || err) : '';
+      document.getElementById('fatal').hidden = false;
+      var l = document.getElementById('ov-loading'); if (l) l.hidden = true;
+    };
+    window.addEventListener('error', function (e) {
+      var t = e.target;
+      if (t && t !== window && t.tagName === 'SCRIPT') window.__bfFatal('load', new Error('Could not load ' + (t.src || 'a script')));
+      else if (e.message) window.__bfFatal('error', e.error || new Error(e.message));
+    }, true);
+    window.addEventListener('unhandledrejection', function (e) { window.__bfFatal('error', e.reason); });
+    if (!(window.HTMLScriptElement && HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) window.__bfFatal('browser');
+  })();
+</script>
+<script type="module" src="../src/main.js"></script>
+</body>
+</html>
