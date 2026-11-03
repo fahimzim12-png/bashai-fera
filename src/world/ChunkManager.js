@@ -10,7 +10,7 @@ import { toBufferGeometry } from '../render/GeometryUtil.js';
 const EMPTY = new THREE.BufferGeometry();
 
 export class ChunkManager {
-  constructor({ scene, route, groundMaterial, facadeMaterial, aheadChunks = 4 }) {
+  constructor({ scene, route, groundMaterial, facadeMaterial, signMaterial = facadeMaterial, aheadChunks = 4 }) {
     this.scene = scene;
     this.route = route;
     this.aheadChunks = aheadChunks;
@@ -23,11 +23,12 @@ export class ChunkManager {
       const group = new THREE.Group();
       const ground = new THREE.Mesh(EMPTY, groundMaterial);
       const facade = new THREE.Mesh(EMPTY, facadeMaterial);
-      group.add(ground, facade);
-      group.matrixAutoUpdate = ground.matrixAutoUpdate = facade.matrixAutoUpdate = false;
-      return { group, ground, facade, tris: 0 };
+      const signs = new THREE.Mesh(EMPTY, signMaterial);
+      group.add(ground, facade, signs);
+      group.matrixAutoUpdate = ground.matrixAutoUpdate = facade.matrixAutoUpdate = signs.matrixAutoUpdate = false;
+      return { group, ground, facade, signs, tris: 0 };
     }, (e) => {
-      for (const m of [e.ground, e.facade]) { if (m.geometry !== EMPTY) m.geometry.dispose(); m.geometry = EMPTY; }
+      for (const m of [e.ground, e.facade, e.signs]) { if (m.geometry !== EMPTY) m.geometry.dispose(); m.geometry = EMPTY; }
       e.tris = 0;
     });
   }
@@ -45,9 +46,11 @@ export class ChunkManager {
     const e = this.pool.acquire();
     e.ground.geometry = data.ground.vertexCount ? toBufferGeometry(data.ground) : EMPTY;
     e.facade.geometry = data.facade.vertexCount ? toBufferGeometry(data.facade) : EMPTY;
+    e.signs.geometry = data.signs.vertexCount ? toBufferGeometry(data.signs) : EMPTY;
     e.ground.visible = data.ground.vertexCount > 0;
     e.facade.visible = data.facade.vertexCount > 0;
-    e.tris = data.ground.triCount + data.facade.triCount;
+    e.signs.visible = data.signs.vertexCount > 0;
+    e.tris = data.ground.triCount + data.facade.triCount + data.signs.triCount;
     this.scene.add(e.group);
     this.chunks.set(ci, e);
     const ms = performance.now() - t0;

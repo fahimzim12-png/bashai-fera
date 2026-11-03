@@ -2,16 +2,23 @@
 // Pure function of (route, chunkIndex): the same inputs always give the same street, which is what
 // makes streaming safe (a chunk can be thrown away and rebuilt identically later).
 //
-// Output is two arrays-of-geometry:
-//   ground : vertex-coloured things (road, footpaths, median, viaduct, poles, shops, roofs...)
+// Output is three arrays-of-geometry:
+//   ground : vertex-coloured things (road, footpaths, median, viaduct, poles, shops, roofs,
+//            clothing stalls with hanging garments, street furniture...)
 //   facade : building walls, textured with the window pattern
+//   signs  : signboard quads UV-mapped into the shared text atlas (real Bengali/English text)
 import { CONFIG } from '../core/Config.js';
 import { Rng, hashString } from '../core/Rng.js';
 import { lerp } from '../core/MathUtil.js';
 import { GeometryBuilder, hexToLinear, shade } from '../render/GeometryBuilder.js';
 import { clearsBuildings } from './landmarks/registry.js';
+import { pickDesign, designUV, designSpanWidth } from './signCatalog.js';
 
 const UP = [0, 1, 0];
+const TARPS = ['#2f6ea8', '#c4552f', '#3fae6b'];
+const UMBS = ['#d94f3f', '#3fa0d9', '#e2b23f', '#4fae6b'];
+const CARTS = ['#2f6ea8', '#c4552f', '#555f68'];
+const PLASTIC = ['#c94f3f', '#3f7dc9', '#3fae6b', '#e2b23f'];
 const DOWN = [0, -1, 0];
 const POLE_SPACING = 32;
 const LAMP_SPACING = 36;
@@ -28,6 +35,7 @@ export function buildChunk(route, ci) {
   const s0 = ci * L, s1 = s0 + L;
   const ground = new GeometryBuilder();
   const facade = new GeometryBuilder({ uv: true });
+  const signs = new GeometryBuilder({ uv: true });
   const rng = new Rng(`${route.id}:chunk:${ci}`);
   const jit = (hex, amt = 0.06) => shade(hexToLinear(hex), 1 + (rng.next() - 0.5) * amt);
 
@@ -46,11 +54,15 @@ export function buildChunk(route, ci) {
   viaduct(ground, route, frames, s0, s1);
   poles(ground, route, s0, s1);
   lamps(ground, route, s0, s1);
-  buildings(ground, facade, route, s0, s1);
+  buildings(ground, facade, signs, route, s0, s1);
   stains(ground, route, s0, s1);
   clutter(ground, route, s0, s1);
+  clothingStalls(ground, route, s0, s1);
+  streetLife(ground, route, s0, s1);
+  crossings(ground, route, s0, s1);
+  wallACUnits(ground, route, s0, s1);
 
-  return { ground: ground.finish(), facade: facade.finish(), ci, s0, s1 };
+  return { ground: ground.finish(), facade: facade.finish(), signs: signs.finish(), ci, s0, s1 };
 }
 
 // ---- road, footpaths, median --------------------------------------------------------------
@@ -185,7 +197,7 @@ function lamps(g, route, s0, s1) {
 }
 
 // ---- Buildings: facades (textured) + roofs, shopfronts, awnings, tanks, billboards ---------------
-function buildings(g, fac, route, s0, s1) {
+function buildings(g, fac, sg, route, s0, s1) {
   const f = {};
   for (const b of route.buildings) {
     if (b.sMid < s0 || b.sMid >= s1) continue;
@@ -221,9 +233,25 @@ function buildings(g, fac, route, s0, s1) {
     if (r.chance(0.45)) g.box(roofPt(r.range(-hw / 2, hw / 2), front + side * b.depth * 0.6), rf, rr, 1.6, 1.4, 1.6, '#3f5566', { skipBottom: true });
     if (r.chance(0.25)) g.box(roofPt(r.range(-hw / 2, hw / 2), front + side * b.depth * 0.35), rf, rr, 3.0, 2.4, 3.0, shade(wall, 0.8), { skipBottom: true });
     if (r.chance(0.03 + 0.2 * Math.min(1.5, dr.billboards ?? 0.3)) && b.w > 8) {     // rooftop billboard (density by district)
-      const bl = front - side * 0.3, w2 = b.w * 0.8;
-      g.quad(P(-w2 / 2, bl, y1 + 0.6), P(w2 / 2, bl, y1 + 0.6), P(w2 / 2, bl, y1 + 3.6), P(-w2 / 2, bl, y1 + 3.6), r.pick(pal.signs), { hint: toRoad });
-      g.quad(P(-w2 / 2, bl + side * 0.05, y1 + 0.6), P(w2 / 2, bl + side * 0.05, y1 + 0.6), P(w2 / 2, bl + side * 0.05, y1 + 3.6), P(-w2 / 2, bl + side * 0.05, y1 + 3.6), '#4a4a4a', { hint: [-toRoad[0], 0, -toRoad[2]] });
+      const bl = front - side * 0.3;
+      const di = pickDesign(`${route.id}:bb:${side}:${b.sMid.toFixed(1)}`, 'ad', 2);
+      const du = designUV(di), w2 = designSpanWidth(di);
+      const by0 = y1 + 0.9, by1 = y1 + 2.1;
+      sg.quad(P(-w2 / 2, bl, by0), P(w2 / 2, bl, by0), P(w2 / 2, bl, by1), P(-w2 / 2, bl, by1), '#ffffff',
+        { hint: toRoad, uv: [[du[0], du[1]], [du[2], du[1]], [du[2], du[3]], [du[0], du[3]]] });
+      g.quad(P(-w2 / 2, bl + side * 0.05, by0), P(w2 / 2, bl + side * 0.05, by0), P(w2 / 2, bl + side * 0.05, by1), P(-w2 / 2, bl + side * 0.05, by1), '#4a4a4a', { hint: [-toRoad[0], 0, -toRoad[2]] });
+      for (const px of [-w2 / 2 + 0.35, w2 / 2 - 0.35]) {
+        g.box(P(px, front - side * 0.5, y1), rf, rr, 0.14, 0.95, 0.14, '#5c5c5c', { skipBottom: true });
+      }
+    }
+
+    // building name board above the shop band (some mid-size buildings have one)
+    if (b.w > 8 && r.chance(0.3)) {
+      const di = pickDesign(`${route.id}:bn:${side}:${b.sMid.toFixed(1)}`, 'building', 2);
+      const du = designUV(di), w2 = designSpanWidth(di);
+      const latS = front - side * 0.04;
+      sg.quad(P(-w2 / 2, latS, 3.72), P(w2 / 2, latS, 3.72), P(w2 / 2, latS, 4.26), P(-w2 / 2, latS, 4.26), '#ffffff',
+        { hint: toRoad, uv: [[du[0], du[1]], [du[2], du[1]], [du[2], du[3]], [du[0], du[3]]] });
     }
 
     // shopfronts at street level: shutters, signboards with script suggestion, awnings
@@ -237,20 +265,15 @@ function buildings(g, fac, route, s0, s1) {
       } else {
         g.quad(P(a0, latF, 0.18), P(a1, latF, 0.18), P(a1, latF, 3.0), P(a0, latF, 3.0), r.pick(pal.shutters), { hint: toRoad });
       }
-      // signboard band with a Bengali-script suggestion: hanging headline bar + descender strokes
-      // (abstract shapes only - never real words or business names)
+      // signboard: coloured backing band + a REAL readable sign quad from the text atlas
       const sign = r.pick(pal.signs), signCol = hexToLinear(sign);
-      const lum = signCol[0] * 0.2126 + signCol[1] * 0.7152 + signCol[2] * 0.0722;
-      const ink = shade(signCol, lum > 0.35 ? 0.3 : 2.4);
-      const g0 = a0 + 0.18, g1 = a1 - 0.18, latS = latF - side * 0.012;
+      const latS = latF - side * 0.012;
       g.quad(P(a0, latF, 3.0), P(a1, latF, 3.0), P(a1, latF, 3.6), P(a0, latF, 3.6), signCol, { hint: toRoad });
-      g.quad(P(g0, latS, 3.44), P(g1, latS, 3.44), P(g1, latS, 3.54), P(g0, latS, 3.54), ink, { hint: toRoad });
-      const strokes = r.int(2, 3);
-      for (let k = 0; k < strokes; k++) {
-        const sx = g0 + 0.12 + (k + r.next() * 0.55) * ((g1 - g0) / strokes);
-        const sw2 = 0.08 + r.next() * 0.06, drop = 0.16 + r.next() * 0.22;
-        g.quad(P(sx, latS, 3.44 - drop), P(sx + sw2, latS, 3.44 - drop), P(sx + sw2, latS, 3.44), P(sx, latS, 3.44), ink, { hint: toRoad });
-      }
+      const di = pickDesign(`${route.id}:sign:${side}:${b.sMid.toFixed(1)}:${j}`, r.chance(0.15) ? 'ad' : 'shop', 1);
+      const du = designUV(di), wS = designSpanWidth(di);
+      const cx = (a0 + a1) / 2, s0u = Math.max(a0 + 0.04, cx - wS / 2), s1u = Math.min(a1 - 0.04, cx + wS / 2);
+      sg.quad(P(s0u, latS, 3.03), P(s1u, latS, 3.03), P(s1u, latS, 3.57), P(s0u, latS, 3.57), '#ffffff',
+        { hint: toRoad, uv: [[du[0], du[1]], [du[2], du[1]], [du[2], du[3]], [du[0], du[3]]] });
       const aw = r.pick(pal.awnings), out = latF - side * 1.0;
       if (r.chance(0.3)) {
         // two-tone striped awning
@@ -290,7 +313,7 @@ function clutter(g, route, s0, s1) {
       g.box(P(0, lat + 1.05, 2.0), ff, rr, 2.2, 0.06, 1.4, hashString(`clutt:${k}`) / 4294967296 > 0.5 ? hexToLinear('#2f6ea8') : hexToLinear('#c4552f'), { skipBottom: true });
     } else if (kind < 0.7) {
       // vendor umbrella: bamboo pole + 6-segment cloth cone
-      const col = hexToLinear(['#d94f3f', '#3fa0d9', '#e2b23f', '#4fae6b'][k % 4]);
+      const col = hexToLinear(UMBS[((k % 4) + 4) % 4]);
       g.box(P(0, lat, 0), ff, rr, 0.07, 2.2, 0.07, hexToLinear('#b8a25c'), { skipBottom: true });
       const tip = P(0, lat, 2.35), R = 1.15;
       for (let j = 0; j < 6; j++) {
@@ -325,5 +348,206 @@ function stains(g, route, s0, s1) {
     const r = 0.7 + h2 * 1.6;
     const c = shade(hexToLinear(road.color), 0.76);
     g.quad(W(f, lat - r, 0.012), W(f, lat + r * 0.55, 0.012), W(f, lat + r, 0.012), W(f, lat - r * 0.45, 0.012), c, { hint: UP });
+  }
+}
+
+// ---- Clothing commerce: racks with hanging garments + wall displays ---------------------------------
+// The signature Dhaka look. Racks go ONLY on the far (right) footpath; wall displays hang
+// flush against building fronts on either side, so the player's walkable strip stays clear.
+const GARMENTS = ['#c23b5a', '#2e7dab', '#3a8c5c', '#c9a23a', '#7d3ac1', '#d4692e', '#b03a68', '#e8e4da', '#5c7d6b', '#31435c'];
+
+function clothingStalls(g, route, s0, s1) {
+  const f = {};
+  for (let k = Math.floor(s0 / 7); k * 7 < s1; k++) {
+    const s = k * 7 + (hashString(`cloth:${k}`) / 4294967296) * 4;
+    if (s < s0 || s >= s1) continue;
+    const dr = route.segmentAt(s).dressing || {};
+    if (hashString(`clothc:${k}`) / 4294967296 > (dr.cloth ?? 0.3) * 0.55) continue;
+    route.space.sample(s, f);
+    const fp = route.profileAt(s).elements.filter((e) => e.kind === 'footpath');
+    const right = fp[fp.length - 1];
+    if (!right) continue;
+    const lat = right.x1 - 1.5 - (hashString(`clothl:${k}`) / 4294967296) * 0.8;
+    const P = (ls, lt, y) => [f.x + f.fx * ls + f.rx * lt, y, f.z + f.fz * ls + f.rz * lt];
+    const ff = [f.fx, f.fz], rr = [f.rx, f.rz];
+    const frame = hexToLinear('#6b6459');
+
+    if (hashString(`clothk:${k}`) / 4294967296 < 0.62) {
+      // A-frame rack with a bar of hanging garments (shirts / kameez / panjabi)
+      g.box(P(0, lat - 0.9, 0), ff, rr, 0.07, 1.65, 0.07, frame, { skipBottom: true });
+      g.box(P(0, lat + 0.9, 0), ff, rr, 0.07, 1.65, 0.07, frame, { skipBottom: true });
+      g.box(P(0, lat, 1.6), ff, rr, 2.0, 0.05, 0.05, frame, { skipBottom: true });
+      const n = 5 + (hashString(`clothn:${k}`) / 4294967296) * 4 | 0;
+      for (let j = 0; j < n; j++) {
+        const gx = -0.85 + (j + 0.5) * (1.7 / n);
+        const col = hexToLinear(GARMENTS[(hashString(`clothg:${k}:${j}`) >>> 0) % GARMENTS.length]);
+        const sway = ((hashString(`cloths:${k}:${j}`) / 4294967296) - 0.5) * 0.1;
+        g.quad(P(gx - 0.19, lat + sway, 1.0), P(gx + 0.19, lat + sway, 1.0),
+          P(gx + 0.23, lat - sway * 0.4, 0.38), P(gx - 0.23, lat - sway * 0.4, 0.38),
+          col, { hint: [f.fx * 0.2, 1, f.fz * 0.2], double: true });           // garment
+        g.box(P(gx, lat + sway, 1.56), ff, rr, 0.02, 0.12, 0.02, '#3a3a3a', { skipBottom: true });  // hanger
+      }
+      // folded stacks on the rack foot board
+      for (let j = 0; j < 2; j++) {
+        const fx2 = -0.55 + j * 1.1;
+        const col = hexToLinear(GARMENTS[(hashString(`clothf:${k}:${j}`) >>> 0) % GARMENTS.length]);
+        g.box(P(fx2, lat + 0.45, 0.16), ff, rr, 0.42, 0.30, 0.34, col, { skipBottom: true, top: shade(col, 1.12) });
+      }
+    } else {
+      // makeshift roadside stall: bamboo frame + garments on lines, tarp roof
+      const tarp = hexToLinear(TARPS[((k % 3) + 3) % 3]);
+      for (const px of [-1.1, 1.1]) g.box(P(px, lat, 0), ff, rr, 0.06, 2.1, 0.06, hexToLinear('#b8a25c'), { skipBottom: true });
+      g.box(P(0, lat, 2.15), ff, rr, 2.5, 0.05, 1.4, tarp, { skipBottom: true });
+      for (let line = 0; line < 2; line++) {
+        const ly = 1.75 - line * 0.5, loff = lat - 0.45 + line * 0.9;
+        g.box(P(0, loff, ly), ff, rr, 2.2, 0.02, 0.02, '#8a8a8a', { skipBottom: true });
+        for (let j = 0; j < 4; j++) {
+          const gx = -0.85 + j * 0.55;
+          const col = hexToLinear(GARMENTS[(hashString(`clothw:${k}:${line}:${j}`) >>> 0) % GARMENTS.length]);
+          g.quad(P(gx - 0.17, loff, ly - 0.06), P(gx + 0.17, loff, ly - 0.06),
+            P(gx + 0.20, loff, ly - 0.62), P(gx - 0.20, loff, ly - 0.62),
+            col, { hint: [0, 1, 0.2], double: true });
+        }
+      }
+    }
+  }
+
+  // wall displays: garments hanging flush on building fronts above head height
+  for (let k = Math.floor(s0 / 11); k * 11 < s1; k++) {
+    const s = k * 11 + (hashString(`wdsp:${k}`) / 4294967296) * 6;
+    if (s < s0 || s >= s1) continue;
+    const dr = route.segmentAt(s).dressing || {};
+    if (hashString(`wdspc:${k}`) / 4294967296 > (dr.cloth ?? 0.3) * 0.4) continue;
+    const b = route.buildings.find((bb) => Math.abs(bb.sMid - s) < bb.w / 2);
+    if (!b || route.landmarks.some((lm) => clearsBuildings(lm, b.side, b.sMid))) continue;
+    route.space.sample(s, f);
+    const prof = route.profileAt(s);
+    const front = b.side < 0 ? prof.frontageL : prof.frontageR;
+    const P = (ls, lt, y) => [f.x + f.fx * ls + f.rx * lt, y, f.z + f.fz * ls + f.rz * lt];
+    const latW = front - b.side * 0.05;
+    const n = 3 + (hashString(`wdspn:${k}`) % 3);
+    for (let j = 0; j < n; j++) {
+      const col = hexToLinear(GARMENTS[(hashString(`wdspg:${k}:${j}`) >>> 0) % GARMENTS.length]);
+      const gy = 2.9 - j * 0.62;
+      g.quad(P(-0.22, latW, gy - 0.58), P(0.22, latW, gy - 0.58), P(0.22, latW, gy), P(-0.22, latW, gy),
+        col, { hint: [-b.side * f.rx, 0, -b.side * f.rz], double: true });
+      g.box(P(0, latW, gy + 0.02), [f.fx, f.fz], [f.rx, f.rz], 0.4, 0.03, 0.03, '#3a3a3a', { skipBottom: true });
+    }
+  }
+}
+
+// ---- Street life: plastic chairs + tables, food carts, fruit baskets --------------------------------
+function streetLife(g, route, s0, s1) {
+  const f = {};
+  for (let k = Math.floor(s0 / 13); k * 13 < s1; k++) {
+    const s = k * 13 + (hashString(`life:${k}`) / 4294967296) * 7;
+    if (s < s0 || s >= s1) continue;
+    route.space.sample(s, f);
+    const fp = route.profileAt(s).elements.filter((e) => e.kind === 'footpath');
+    const right = fp[fp.length - 1];
+    if (!right) continue;
+    const lat = right.x1 - 1.2 - (hashString(`lifel:${k}`) / 4294967296) * 1.2;
+    const P = (ls, lt, y) => [f.x + f.fx * ls + f.rx * lt, y, f.z + f.fz * ls + f.rz * lt];
+    const ff = [f.fx, f.fz], rr = [f.rx, f.rz];
+    const kind = hashString(`lifek:${k}`) / 4294967296;
+    const plastic = hexToLinear(PLASTIC[((k % 4) + 4) % 4]);
+    if (kind < 0.4) {
+      // tea-stall seating: 2 plastic chairs + a small table
+      for (const cx of [-0.7, 0.7]) {
+        g.box(P(cx, lat, 0.40), ff, rr, 0.45, 0.05, 0.45, plastic, { skipBottom: true });
+        g.box(P(cx, lat - 0.20, 0.68), ff, rr, 0.45, 0.30, 0.05, plastic, { skipBottom: true });
+        g.box(P(cx, lat, 0.02), ff, rr, 0.40, 0.36, 0.40, shade(plastic, 0.7), { skipBottom: true });
+      }
+      g.box(P(0, lat + 0.75, 0.36), ff, rr, 0.55, 0.04, 0.55, shade(plastic, 0.85), { skipBottom: true });
+      g.box(P(0, lat + 0.75, 0.16), ff, rr, 0.08, 0.30, 0.08, '#4a4a4a', { skipBottom: true });
+    } else if (kind < 0.7) {
+      // food cart: cabinet on wheels with a glass display and a handle
+      const cart = hexToLinear(CARTS[((k % 3) + 3) % 3]);
+      g.box(P(0, lat, 0.55), ff, rr, 1.25, 0.75, 0.75, cart, { skipBottom: true });
+      g.box(P(0, lat + 0.35, 0.95), ff, rr, 1.0, 0.5, 0.06, hexToLinear('#2a3d4d'), { skipBottom: true, top: shade(cart, 1.1) });   // glass back
+      g.box(P(0, lat + 0.35, 0.9), ff, rr, 0.9, 0.06, 0.7, hexToLinear('#e8dcc8'), { skipBottom: true });   // counter
+      g.box(P(0, lat + 0.62, 1.28), ff, rr, 1.25, 0.05, 0.05, '#8a8a8a', { skipBottom: true });             // handle rail
+      wheel2(g, P(-0.5, lat + 0.3, 0.32), ff, rr);
+      wheel2(g, P(0.5, lat + 0.3, 0.32), ff, rr);
+    } else {
+      // fruit / vegetable baskets and crates
+      const fruit = [hexToLinear('#e2793a'), hexToLinear('#c93a3a'), hexToLinear('#7db83a'), hexToLinear('#c9a23a')];
+      for (let j = 0; j < 4; j++) {
+        const bx = (hashString(`lifeb:${k}:${j}`) / 4294967296 - 0.5) * 1.6;
+        const bz = (hashString(`lifec:${k}:${j}`) / 4294967296) * 0.7;
+        const col = fruit[(hashString(`lifed:${k}:${j}`) >>> 0) % fruit.length];
+        const yy = j % 2 ? 0.34 : 0.02;
+        g.box(P(bx, lat + bz, yy), ff, rr, 0.5, 0.28, 0.5, shade(col, 0.55), { skipBottom: true, top: col });
+      }
+    }
+  }
+}
+
+/** Small cart wheel (two tri-fans), reused by the food cart. */
+function wheel2(g, base, ff, rr) {
+  const dark = hexToLinear('#1c1e22');
+  const c = [base[0], base[1] + 0.16, base[2]];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2, a2 = ((i + 1) / 6) * Math.PI * 2;
+    g.tri([c[0] + rr[0] * 0.02, c[1], c[2] + rr[1] * 0.02],
+      [c[0] + Math.sin(a) * ff[0] * 0.16 + rr[0] * 0.02, c[1] + Math.cos(a) * 0.16, c[2] + Math.sin(a) * ff[1] * 0.16 + rr[1] * 0.02],
+      [c[0] + Math.sin(a2) * ff[0] * 0.16 + rr[0] * 0.02, c[1] + Math.cos(a2) * 0.16, c[2] + Math.sin(a2) * ff[1] * 0.16 + rr[1] * 0.02],
+      dark, [rr[0], 0, rr[1]]);
+    g.tri([c[0] - rr[0] * 0.02, c[1], c[2] - rr[1] * 0.02],
+      [c[0] + Math.sin(a) * ff[0] * 0.16 - rr[0] * 0.02, c[1] + Math.cos(a) * 0.16, c[2] + Math.sin(a) * ff[1] * 0.16 - rr[1] * 0.02],
+      [c[0] + Math.sin(a2) * ff[0] * 0.16 - rr[0] * 0.02, c[1] + Math.cos(a2) * 0.16, c[2] + Math.sin(a2) * ff[1] * 0.16 - rr[1] * 0.02],
+      dark, [-rr[0], 0, -rr[1]]);
+  }
+}
+
+// ---- Zebra crossings + wall-mounted AC units (M3.5 district polish) -----------------------------
+// Crossings sit at the footbridge (people funnel to its stairs) and at the fountain plaza,
+// taken from the route's own landmark positions, so they stay correct if the route moves.
+function crossings(g, route, s0, s1) {
+  const f = {};
+  const spots = [];
+  for (const lm of route.landmarks) {
+    if (lm.kind === 'farmgate-footbridge') spots.push(lm.s);
+  }
+  spots.push(route.length - 12);
+  for (const cs of spots) {
+    if (cs + 2.4 < s0 || cs - 2.4 >= s1) continue;
+    route.space.sample(cs, f);
+    const prof = route.profileAt(cs);
+    const white = hexToLinear('#d8d5cc');
+    for (const el of prof.elements) {
+      if (el.kind !== 'road') continue;
+      for (let lat = el.x0 + 0.5; lat < el.x1 - 0.3; lat += 0.95) {
+        g.quad(W(f, lat, 0.012), W(f, lat + 0.55, 0.012), W(f, lat + 0.55, 0.026), W(f, lat, 0.026), white, { hint: UP });
+      }
+    }
+  }
+}
+
+function wallACUnits(g, route, s0, s1) {
+  const f = {};
+  for (const b of route.buildings) {
+    if (b.sMid < s0 || b.sMid >= s1) continue;
+    if (route.landmarks.some((lm) => clearsBuildings(lm, b.side, b.sMid))) continue;
+    const n = hashString(`ac:${route.id}:${b.sMid.toFixed(1)}:${b.side}`) % 4;   // 0..3 units
+    if (!n) continue;
+    route.space.sample(b.sMid, f);
+    const prof = route.profileAt(b.sMid);
+    const front = b.side < 0 ? prof.frontageL : prof.frontageR;
+    const latW = front - b.side * 0.18;
+    const P = (ls, lt, y) => [f.x + f.fx * ls + f.rx * lt, y, f.z + f.fz * ls + f.rz * lt];
+    const ff = [f.fx, f.fz], rr = [f.rx, f.rz];
+    const body = hexToLinear('#c9cdc9'), dark = hexToLinear('#3a3f44');
+    for (let j = 0; j < n; j++) {
+      const ax = (hashString(`acx:${route.id}:${b.sMid.toFixed(1)}:${j}`) / 4294967296 - 0.5) * (b.w - 1.5);
+      const ay = 4.6 + (hashString(`acy:${route.id}:${b.sMid.toFixed(1)}:${j}`) / 4294967296) * Math.min(9, b.h - 6);
+      if (ay > b.h - 0.6) continue;
+      g.box(P(ax, latW, ay), ff, rr, 0.68, 0.5, 0.34, body, { skipBottom: true, top: dark });
+      g.box(P(ax, latW - b.side * 0.09, ay + 0.06), ff, rr, 0.56, 0.34, 0.03, dark, { skipBottom: true });
+      // drip stain under the unit
+      g.quad(P(ax - 0.2, front - b.side * 0.01, 0.5), P(ax + 0.2, front - b.side * 0.01, 0.5),
+        P(ax + 0.26, front - b.side * 0.01, ay - 0.25), P(ax - 0.26, front - b.side * 0.01, ay - 0.25),
+        shade(hexToLinear('#8a8578'), 0.85), { hint: [-b.side * f.rx, 0, -b.side * f.rz] });
+    }
   }
 }

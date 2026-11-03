@@ -37,6 +37,9 @@ const state = (page) => G(page, () => {
     state: g?.sm?.name, s: g?.player?.s, x: g?.player?.x, tier: g?.quality?.tier?.name, scale: g?.quality?.scale,
     chunks: g?.chunks?.loadedCount, calls: g?.renderer?.info?.render?.calls, tris: g?.renderer?.info?.render?.triangles,
     landmarks: g?.landmarks?.entries?.length, landmarkVis: g?.landmarks?.visibleCount, landmarkTris: g?.landmarks?.stats?.triangles,
+    crowdVis: g?.crowd?.stats?.visible, crowdPop: g?.crowd?.people?.length,
+    traffic: g?.traffic?.vehicles?.filter?.(v => v._active)?.length,
+    audioOn: !!g?.audio?.ctx,
     gpu: g?.profile?.gpu, w: g?.renderer?.domElement?.width, h: g?.renderer?.domElement?.height, ema: g?.frameEma,
   };
 });
@@ -78,6 +81,10 @@ await session('desktop', { viewport: { width: 800, height: 450 } }, '?debug=1&ad
   st = await state(page);
   check(st.state === 'playing', `desktop: automatic forward walking begins (s=${st.s.toFixed(1)}, nobody pressed anything)`);
   await page.screenshot({ path: `${out}/d2-walking.png` });
+  st = await state(page);
+  check(st.crowdVis > 0 && st.crowdVis <= 36, `desktop: crowd visible ${st.crowdVis}/${st.crowdPop} population`);
+  check(st.traffic > 0 && st.traffic <= 26, `desktop: traffic active ${st.traffic} vehicles`);
+  check(st.audioOn, 'desktop: procedural ambience engine started after the start tap');
 
   const x0 = st.x;
   await page.keyboard.down('d'); await waitFor(page, (x) => window.__bashai.player.x > x + 0.8, x0); await page.keyboard.up('d');
@@ -98,7 +105,7 @@ await session('desktop', { viewport: { width: 800, height: 450 } }, '?debug=1&ad
   check((await state(page)).state === 'playing', 'desktop: Esc again resumes');
   await page.evaluate(() => window.__bashai.bus.emit('ui:restart')); await page.waitForTimeout(300);
   st = await state(page); check(st.state === 'playing' && st.s < 3, 'desktop: restart returns to the start');
-  check(st.calls > 0 && st.calls < 60, `desktop: draw calls stay low (${st.calls}), triangles ${st.tris}`);
+  check(st.calls > 0 && st.calls < 100, `desktop: draw calls stay low (${st.calls}), triangles ${st.tris}`);
 });
 
 // ---- 2. Walk the whole route: chunk streaming + end screen --------------------------------------------------

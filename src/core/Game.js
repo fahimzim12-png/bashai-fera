@@ -13,6 +13,10 @@ import { RouteModel } from '../world/RouteModel.js';
 import { ChunkManager } from '../world/ChunkManager.js';
 import { LandmarkManager } from '../world/LandmarkManager.js';
 import { Environment } from '../world/Environment.js';
+import { TrafficSystem } from '../city/TrafficSystem.js';
+import { TrafficRenderer } from '../city/TrafficRenderer.js';
+import { CrowdSystem } from '../city/CrowdSystem.js';
+import { CrowdRenderer } from '../city/CrowdRenderer.js';
 import { PlayerController } from '../player/PlayerController.js';
 import { PlayerAvatar } from '../player/PlayerAvatar.js';
 import { CameraRig } from '../camera/CameraRig.js';
@@ -21,9 +25,11 @@ import { probeGpu, createRenderer } from '../render/RendererFactory.js';
 import { QualityManager } from '../render/QualityManager.js';
 import { detectProfile, chooseTier, TIERS } from '../render/tiers.js';
 import { createFacadeTexture } from '../render/FacadeTexture.js';
+import { createSignAtlas } from '../render/SignAtlasTexture.js';
 import { Hud } from '../ui/Hud.js';
 import { Overlays } from '../ui/Overlays.js';
 import { DebugOverlay } from '../debug/DebugOverlay.js';
+import { AudioEngine } from '../audio/AudioEngine.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 const ROUTE_FILE = 'data/routes/farmgate-saarc.json';
@@ -81,12 +87,21 @@ export class Game {
     await nextFrame();
 
     // 3) scene
+    ui.setProgress(0.2, 'সাইনবোর্ড তৈরি হচ্ছে…');
+    await nextFrame();
+    const signAtlas = await createSignAtlas();              // bundled font -> readable Bengali signs
     this.scene = new THREE.Scene();
     this.env = new Environment(this.scene, this.route.lighting);
     const groundMat = new THREE.MeshLambertMaterial({ vertexColors: true });
     const facadeMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: createFacadeTexture() });
-    this.chunks = new ChunkManager({ scene: this.scene, route: this.route, groundMaterial: groundMat, facadeMaterial: facadeMat, aheadChunks: this.quality.tier.aheadChunks });
+    const signMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: signAtlas.texture });
+    this.chunks = new ChunkManager({ scene: this.scene, route: this.route, groundMaterial: groundMat, facadeMaterial: facadeMat, signMaterial: signMat, aheadChunks: this.quality.tier.aheadChunks });
     this.landmarks = new LandmarkManager({ scene: this.scene, route: this.route, material: groundMat });
+    this.traffic = new TrafficSystem({ route: this.route, bus: this.bus });
+    this.traffic.attach(new TrafficRenderer({ scene: this.scene, material: groundMat, system: this.traffic }));
+    this.crowd = new CrowdSystem({ route: this.route, bus: this.bus });
+    this.crowd.attach(new CrowdRenderer({ scene: this.scene, material: groundMat, system: this.crowd }));
+    if (this.params.audio !== '0') this.audio = new AudioEngine(this.bus);
     this.avatar = new PlayerAvatar(groundMat);
     this.scene.add(this.avatar.root);
 
@@ -97,6 +112,8 @@ export class Game {
       walkableAt: (s, o) => this.route.walkableAt(s, o),
     });
     this.player.reset(this.route.startLateral, this.startS);
+    this.traffic.reset(this.startS);
+    this.crowd.update(this.startS, 0);
     this.cameraRig = new CameraRig(this.route);
     this.input = new InputManager(this.bus, this.canvas);
     this.input.attach();
@@ -142,13 +159,14 @@ export class Game {
       playing: {
         enter: () => {
           ui.hideAll(); hud.show(true); this.input.reset();
+          if (this.audio) { this.audio.start(); this.audio.duck(false); }
           this.wake.acquire(); this.quality.resetClock(); this.loop.resetTime();
           const touch = this.input.device === 'touch' || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
           hud.showTouchHint(touch);
           clearTimeout(this._hintTimer);
           this._hintTimer = setTimeout(() => hud.showTouchHint(false), 7000);
         },
-        exit: () => { this.wake.release(); this.input.reset(); },
+        exit: () => { this.wake.release(); this.input.reset(); if (this.audio) this.audio.duck(true); },
         update: (dt) => { if (this.player.update(dt, this.input.steer)) this.bus.emit('route:end'); },
         render: (a, dt, ms, now) => this._draw(a, dt, true, ms, now),
       },
@@ -175,6 +193,15 @@ export class Game {
       else if (this.sm.name === 'paused') this.sm.go('playing');
     });
     bus.on('input:debugToggle', () => this.debug.toggle());
+    bus.on('traffic:nearmiss', (e) => {
+      this.avatar.nudge(e.strength, e.side);
+      this.cameraRig.addShake(e.strength * 0.45);
+    });
+    bus.on('traffic:horn', (e) => {
+      if (!this.audio) return;
+      if (e.type === 'rickshaw') this.audio.bell();
+      else this.audio.horn(e.type, e.side || 0);
+    });
     bus.on('route:end', () => this.sm.go('ended'));
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { if (this.sm.name === 'playing') this.sm.go('paused'); }
@@ -190,6 +217,7 @@ export class Game {
     this.player.reset(this.route.startLateral, this.startS);
     this.cameraRig.snap(this.player.interpolate(1, this._p));
     this.chunks.update(this.startS, Infinity);
+    this.traffic.reset(this.startS);
     this.sm.go('playing');
   }
 
@@ -205,6 +233,8 @@ export class Game {
     const t = this.quality.tier;
     this.chunks.aheadChunks = t.aheadChunks;
     this.env.setViewDistance(t.aheadChunks * CONFIG.world.chunkLength - 20);
+    if (this.traffic) this.traffic.setTier(t);
+    if (this.crowd) this.crowd.setTier(t);
     this.dirty = true;
   }
 
@@ -239,9 +269,13 @@ export class Game {
 
     if (active) this.cameraRig.update(p, dt);
     route.space.toWorld(p.s, p.x, this._w);
-    this.avatar.setPose(this._w.x, this._w.z, Math.atan2(this._w.fx, this._w.fz), p.phase, p.vx / CONFIG.player.lateralMaxSpeed);
+    this.avatar.setPose(this._w.x, this._w.z, Math.atan2(this._w.fx, this._w.fz), p.phase,
+      p.vx / CONFIG.player.lateralMaxSpeed, { dt, stride: active ? 1 : 0 });
     if (active) this.chunks.update(p.s);
     this.landmarks.update(p.s);
+    if (active) this.traffic.update(p.s, p.x, dt);
+    this.crowd.update(p.s, active ? dt : 0);
+    if (this.audio && active) this.audio.update(p.s, route.length, this.crowd.stats.visible / this.crowd.capacity, dt);
     this.env.updateAt(p.s, route);
     this.env.follow(this.cameraRig.camera.position);
     this.renderer.render(this.scene, this.cameraRig.camera);
@@ -268,6 +302,9 @@ export class Game {
       geometries: info.memory.geometries, textures: info.memory.textures,
       chunks: this.chunks.loadedCount, buildLast: this.chunks.stats.lastBuildMs, buildMax: this.chunks.stats.maxBuildMs,
       landmarks: this.landmarks.entries.length, landmarksVis: this.landmarks.visibleCount, landmarkTris: this.landmarks.stats.triangles,
+      crowdVis: this.crowd.stats.visible, crowdPop: this.crowd.people.length,
+      traffic: this.traffic.stats.active, nearMisses: this.traffic.stats.nearMisses,
+      audio: this.audio ? (this.audio.ctx ? 'on' : 'idle') : 'off',
       s: p.s, x: p.x, segment: this.route.segmentAt(p.s).name.en,
       state: this.sm.name, device: this.input.device, change: q.lastChange,
       gpu: this.profile.gpu || 'unknown',

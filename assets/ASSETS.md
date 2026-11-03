@@ -10,23 +10,17 @@ No Google Maps imagery. Anything "non-commercial", "no derivatives" or of unclea
 |---|---|---|---|
 | Three.js | 0.187.0 (r187), minified with esbuild, licence headers kept | MIT | `vendor/three/` (licence text in `vendor/three/LICENSE`) |
 
-## Fonts (loaded from Google Fonts at runtime)
-| Item | Licence |
-|---|---|
-| Hind Siliguri | SIL Open Font License 1.1 |
-| Bricolage Grotesque | SIL Open Font License 1.1 |
+## Fonts
+| Item | Licence | Where |
+|---|---|---|
+| Hind Siliguri (subset to Bengali block + Latin, used for signboard textures) | SIL Open Font License 1.1 (`assets/fonts/OFL.txt`) | `assets/fonts/HindSiliguri-Regular.ttf`, `assets/fonts/HindSiliguri-Bold.ttf` |
+| Bricolage Grotesque (UI, loaded from Google Fonts at runtime) | SIL Open Font License 1.1 | runtime |
 
 ## 3D models, textures, audio, illustrations
-None yet — the game is still 100% procedural.
-
-Milestone 2 kept this state on purpose: all landmark geometry (Farmgate footbridge, MRT-6 style station,
-Karwan Bazar market sheds, SAARC fountain) is original parametric geometry generated in code from the
-sourced facts in `data/routes/farmgate-saarc.json` (`provenance` + landmark notes). Facade/window patterns
-are drawn at start-up on a canvas. Signboards use abstract shapes only — never real words, shop names or brands.
-
-If photographic textures are added later (planned candidates: corrugated tin, grimy plaster, plaza paving),
-source them CC0-first (ambientCG / Poly Haven) or CC BY with attribution; CC BY-SA needs an explicit sign-off.
-Each processed file gets a row in the table below and the licence guard test keeps the ledger honest.
+All world geometry is original parametric geometry generated in code. Signboards are painted at
+start-up onto a canvas atlas with the bundled Hind Siliguri font — the sign **texts** are original
+fictional shop names written for this game (no real brands), so no third-party rights apply.
+Procedural audio (M3) is synthesized at runtime with WebAudio — no recordings, no licences needed.
 
 ## Textures (files under `assets/textures/`)
 | File | Source URL | Author | Licence | Added | Derivation |

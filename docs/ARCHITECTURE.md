@@ -78,3 +78,53 @@ docs/                  PROJECT_PLAN, ARCHITECTURE, DEVELOPMENT, MILESTONE2_PLAN
 6. Consequence flow + memorial cards (separate system) + cinematic transitions.
 7. 2D backstory + route select + save/settings.
 8. More routes/landmarks, GLB assets, art pass. 9. Polish, accessibility, QA matrix.
+
+## Milestone 3 additions — living streets + cinematic protagonist
+
+**Character system**
+- `src/player/walkCycle.js` — pure pose maths (`walkPose(phase, stride)`, `idlePose(time, seed)`),
+  shared by the hero and every crowd member; unit-tested for symmetry/continuity/bounds.
+- `src/player/PlayerAvatar.js` — articulated hero (hips, knees, shoulders, neck): canvas face
+  (photo-based stylised likeness: warm brown skin, curly black hair, rectangular glasses),
+  striped office shirt, satchel. Interface unchanged: `setPose(x, z, yaw, phase, lean, {dt, stride})`.
+- `src/city/characterKit.js` — crowd body-part geometries (7 parts), joint table, clothing palettes.
+
+**City population (`src/city/`)**
+- `CrowdSystem.js` (pure) + `CrowdRenderer.js` (THREE): walkers/standers/talkers/tea-stall
+  sitters/vendors/porters on footpaths only; whole crowd = 8 draw calls (InstancedMesh per
+  body part, per-instance clothing colours). Counts per tier: 14/24/36.
+- `TrafficSystem.js` (pure sim) + `TrafficRenderer.js`: 8 vehicle types, left-hand traffic
+  (left carriageway +s, right oncoming), car-following, overtakes, recycle windows;
+  every vehicle exposes (s, lat, dir, speed, len, wid) for future collision gameplay.
+  Vehicles never leave the road elements. Emits `traffic:nearmiss` (camera shake + avatar
+  flinch) and `traffic:horn` (audio). Counts per tier: 12/18/26 (largest-remainder exact).
+- `src/world/dressing.js` — `stallSpots()` shared hash formula: CrowdSystem vendors/sitters
+  anchor to exactly the stalls ChunkBuilder draws.
+
+**Signage with real text**
+- `src/world/signCatalog.js` (pure) — authored fictional Bengali/English shop/building/ad
+  texts, deterministic atlas packing (1024², 256×64 cells, span 1 = 2.4 m / span 2 = 4.8 m
+  boards at 4:1), `pickDesign(key, kind, span)`.
+- `src/render/SignAtlasTexture.js` — paints the atlas at start-up with bundled Hind Siliguri
+  (OFL, `assets/fonts/`, subset to Bengali+Latin); browser shapes Bengali conjuncts.
+  ChunkBuilder emits sign quads UV-mapped into it; chunks gained a THIRD merged mesh
+  (`signs`), so a chunk costs up to 3 draw calls. Texture exception: 1024² + anisotropy 4
+  for text legibility (deliberate, one texture only).
+
+**Street commerce & detail (ChunkBuilder)**
+- `clothingStalls()` — garment racks with hanging shirts/kameez (right footpath only),
+  wall-hung displays flush to building fronts; `streetLife()` — plastic chairs/tables,
+  food carts, fruit baskets; `crossings()` — zebra stripes at the footbridge + fountain
+  plaza; `wallACUnits()` — AC boxes with drip stains. Dressing schema grew `crowd`, `cloth`
+  (validated 0..2 like the rest).
+
+**Cinematic layer**
+- `CameraRig`: impulse `addShake()` (deterministic wobble, exponential decay), lateral
+  motion-lean in the look target. Near-miss: TrafficSystem → bus → avatar.nudge + camera shake.
+- `src/audio/AudioEngine.js` — 100% procedural WebAudio (no audio files): traffic rumble /
+  crowd murmur / fountain water beds mixed by location, synthesised horns + rickshaw bells
+  on bus events, starts on the start tap, ducks on pause, `?audio=0` disables.
+
+**Budgets (M3)**: draw calls target ≤ 80 on Redmi 9 (smoke asserts < 100 desktop);
+crowd 8 + traffic 8 + chunks 3×9 + landmarks 5 + sky 2 + hero ~12 ≈ 70 worst case;
+new textures: 1× sign atlas (1024²) + 1× 128 face + 1× 64 shirt; fonts 2 × ~220 KB.

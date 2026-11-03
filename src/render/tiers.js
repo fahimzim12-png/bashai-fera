@@ -5,9 +5,9 @@
 export const TIER_ORDER = ['low', 'medium', 'high'];
 
 export const TIERS = {
-  low:    { name: 'low',    maxPixelRatio: 1.0,  targetFps: 30, aheadChunks: 4, antialias: false },
-  medium: { name: 'medium', maxPixelRatio: 1.25, targetFps: 0,  aheadChunks: 6, antialias: false },
-  high:   { name: 'high',   maxPixelRatio: 2.0,  targetFps: 0,  aheadChunks: 8, antialias: true  },
+  low:    { name: 'low',    maxPixelRatio: 1.0,  targetFps: 30, aheadChunks: 4, antialias: false, traffic: 12, crowd: 14, dust: false },
+  medium: { name: 'medium', maxPixelRatio: 1.25, targetFps: 0,  aheadChunks: 6, antialias: false, traffic: 18, crowd: 24, dust: false },
+  high:   { name: 'high',   maxPixelRatio: 2.0,  targetFps: 0,  aheadChunks: 8, antialias: true,  traffic: 26, crowd: 36, dust: true },
 };
 
 export function detectProfile(env) {

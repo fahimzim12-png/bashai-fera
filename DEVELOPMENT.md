@@ -18,7 +18,7 @@ Then open  http://localhost:8000/  (landing page)  or  http://localhost:8000/gam
 | `?at=620` | start 620 m along the route, e.g. straight at Karwan Bazar |
 
 ## Tests
-    node tests/run.mjs        # 50 unit tests (route maths, input, player, quality logic, geometry, landmarks, licence ledger). Needs Node 18+.
+    node tests/run.mjs        # 81 unit tests (route maths, input, player, walk cycle, quality logic, geometry, landmarks, traffic, crowd, sign catalogue, audio state, licence ledger). Needs Node 18+.
 Optional real-browser smoke test (headless Chromium + software WebGL; checks logic/layout, not GPU speed):
 
     npm i playwright-core && CHROME=/path/to/chrome node tests/smoke.mjs http://localhost:8000

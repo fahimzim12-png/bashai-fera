@@ -41,18 +41,41 @@ test('Chunk builder: deterministic, sane sizes, valid data, all chunks of the ro
   let worst = 0, total = 0;
   for (let ci = first; ci <= last; ci++) {
     const c = buildChunk(route, ci);
-    for (const part of [c.ground, c.facade]) {
+    for (const part of [c.ground, c.facade, c.signs]) {
       assert.ok(part.positions.every(Number.isFinite), `chunk ${ci}: finite positions`);
       assert.ok(part.normals.every(Number.isFinite));
       assert.ok(part.vertexCount === 0 || Math.max(...part.indices) < part.vertexCount);
       assert.equal(part.positions.length, part.vertexCount * 3);
     }
     assert.ok(c.facade.uvs.length === c.facade.vertexCount * 2);
-    const tris = c.ground.triCount + c.facade.triCount;
+    // sign quads: UVs stay inside the atlas, white tint so the texture shows its own colours
+    for (let vi = 0; vi < c.signs.vertexCount; vi++) {
+      const u = c.signs.uvs[vi * 2], v = c.signs.uvs[vi * 2 + 1];
+      assert.ok(u >= 0 && u <= 1 && v >= 0 && v <= 1, `chunk ${ci}: sign uv ${u},${v}`);
+    }
+    const tris = c.ground.triCount + c.facade.triCount + c.signs.triCount;
     worst = Math.max(worst, tris); total += tris;
   }
   console.log(`      chunks ${first}..${last}: worst ${worst} tris/chunk, total ${total}`);
-  assert.ok(worst < 20000, 'a chunk must stay light for phones: ' + worst);
+  assert.ok(worst < 24000, 'a chunk must stay light for phones: ' + worst);
+});
+
+test('Chunk builder: real signboards exist where shops exist', () => {
+  const route = new RouteModel(loadRouteJson());
+  // find a mid-route chunk with buildings and check it carries sign quads
+  let found = 0, garmentChunks = 0;
+  const first = chunkIndexForS(route.space.minS), last = chunkIndexForS(route.space.maxS - 1);
+  for (let ci = first; ci <= last; ci++) {
+    const c = buildChunk(route, ci);
+    if (c.signs.triCount > 0) found++;
+    // clothing racks emit many small coloured quads on the right footpath
+    if (c.ground.triCount > 400 && ci >= 0 && ci * 60 < route.length) {
+      const seg = route.segmentAt(ci * 60 + 30);
+      if ((seg.dressing?.cloth ?? 0) > 0.8) garmentChunks++;
+    }
+  }
+  assert.ok(found >= 8, `sign quads in ${found} chunks (shops everywhere on the route)`);
+  assert.ok(garmentChunks >= 2, 'clothing-stall chunks present in Farmgate/Karwan Bazar');
 });
 test('Chunk builder: landmarks are separate meshes, not baked into chunks', () => {
   const route = new RouteModel(loadRouteJson());
