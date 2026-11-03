@@ -54,9 +54,10 @@ test('Chunk builder: deterministic, sane sizes, valid data, all chunks of the ro
   console.log(`      chunks ${first}..${last}: worst ${worst} tris/chunk, total ${total}`);
   assert.ok(worst < 20000, 'a chunk must stay light for phones: ' + worst);
 });
-test('Chunk builder: placeholder fountain exists only near the end of the route', () => {
+test('Chunk builder: landmarks are separate meshes, not baked into chunks', () => {
   const route = new RouteModel(loadRouteJson());
-  const lm = route.landmarks[0], sc = route.length + lm.aheadOfEnd;
-  const near = buildChunk(route, chunkIndexForS(sc)), far = buildChunk(route, 3);
-  assert.ok(near.ground.quadCount > far.ground.quadCount * 0.3);
+  const sc = route.length + 22;                              // the fountain position
+  const near = buildChunk(route, chunkIndexForS(sc));
+  // without a baked fountain ring, a 60 m chunk at the junction stays light
+  assert.ok(near.ground.triCount < 6000, 'junction chunk tris: ' + near.ground.triCount);
 });

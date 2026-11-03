@@ -36,6 +36,7 @@ const state = (page) => G(page, () => {
   return {
     state: g?.sm?.name, s: g?.player?.s, x: g?.player?.x, tier: g?.quality?.tier?.name, scale: g?.quality?.scale,
     chunks: g?.chunks?.loadedCount, calls: g?.renderer?.info?.render?.calls, tris: g?.renderer?.info?.render?.triangles,
+    landmarks: g?.landmarks?.entries?.length, landmarkVis: g?.landmarks?.visibleCount, landmarkTris: g?.landmarks?.stats?.triangles,
     gpu: g?.profile?.gpu, w: g?.renderer?.domElement?.width, h: g?.renderer?.domElement?.height, ema: g?.frameEma,
   };
 });
@@ -69,6 +70,8 @@ await session('desktop', { viewport: { width: 800, height: 450 } }, '?debug=1&ad
   await page.screenshot({ path: `${out}/d1-ready.png` });
   let st = await state(page);
   check(st.state === 'ready' && st.chunks >= 4, `desktop: reaches ready with chunks loaded (${st.chunks})`);
+  check(st.landmarks >= 5 && st.landmarkTris > 3000 && st.landmarkTris < 16000,
+    `desktop: ${st.landmarks} landmark meshes built, ${st.landmarkTris} tris total (budget < 16k)`);
   console.log('      gpu:', st.gpu, '| tier:', st.tier, '| canvas:', st.w + 'x' + st.h);
   await page.click('[data-action="start"]');
   await waitFor(page, () => window.__bashai.player.s > 3);
@@ -102,13 +105,21 @@ await session('desktop', { viewport: { width: 800, height: 450 } }, '?debug=1&ad
 await session('full-route', { viewport: { width: 480, height: 270 } }, '?debug=1&speed=40&adapt=0', async (page) => {
   await waitReady(page);
   await page.click('[data-action="start"]');
-  let maxChunks = 0, maxBuild = 0, shot = false;
+  let maxChunks = 0, maxBuild = 0, shot = false, shotFarmgate = false, shotFountain = false;
   const t0 = Date.now();
   while (Date.now() - t0 < 170000) {
     await page.waitForTimeout(300);
     const st = await state(page);
     maxChunks = Math.max(maxChunks, st.chunks || 0);
+    if (!shotFarmgate && st.s > 40) {                                   // under the footbridge arches
+      await page.screenshot({ path: `${out}/f1-farmgate.png` }); shotFarmgate = true;
+      check(st.landmarkVis >= 1, `full-route: footbridge in view at s=${st.s?.toFixed(0)} (${st.landmarkVis} landmarks visible)`);
+    }
     if (!shot && st.s > 700) { await page.screenshot({ path: `${out}/r1-karwan.png` }); shot = true; }
+    if (!shotFountain && st.s > 1050) {                                 // fountain terminus down the avenue
+      await page.screenshot({ path: `${out}/f2-fountain.png` }); shotFountain = true;
+      check(st.landmarkVis >= 1, `full-route: fountain visible ahead at s=${st.s?.toFixed(0)}`);
+    }
     if (st.state === 'ended') break;
   }
   maxBuild = await G(page, () => window.__bashai.chunks.stats.maxBuildMs);

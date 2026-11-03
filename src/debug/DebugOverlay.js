@@ -14,6 +14,7 @@ export class DebugOverlay {
       `draw calls ${i.calls}   triangles ${i.triangles}`,
       `geometries ${i.geometries}  textures ${i.textures}`,
       `chunks ${i.chunks}  build last ${i.buildLast.toFixed(1)} ms  max ${i.buildMax.toFixed(1)} ms`,
+      `landmarks ${i.landmarks} (${i.landmarksVis} in view)  tris ${i.landmarkTris}`,
       `s ${i.s.toFixed(1)} m   x ${i.x.toFixed(2)} m   ${i.segment}`,
       `state ${i.state}   device ${i.device}`,
       i.change ? `last quality change: ${i.change.kind} -> ${i.change.tier} @${i.change.scale} (${i.change.reason})` : 'no quality changes',

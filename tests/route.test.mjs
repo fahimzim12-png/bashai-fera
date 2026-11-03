@@ -47,6 +47,28 @@ test('validator catches common mistakes', () => {
   assert.ok(v.errors.length >= 3);
 });
 
+test('Milestone 2: moods and dressing validate cleanly on the real route', () => {
+  const v = validateRoute(loadRouteJson());
+  assert.deepEqual(v.errors, []);
+});
+
+test('Milestone 2: validator rejects malformed moods and dressing values', () => {
+  const a = loadRouteJson();
+  a.moods['karwan-bazar'].fog = 'not-a-colour';
+  a.moods['karwan-bazar'].density = 9;
+  assert.ok(validateRoute(a).errors.length >= 2, 'bad mood colour + density are errors');
+  const b = loadRouteJson();
+  b.segments[0].dressing = { cables: -1 };
+  const vb = validateRoute(b);
+  assert.ok(vb.errors.some((e) => /dressing/.test(e)), 'negative dressing is an error');
+  const c = loadRouteJson();
+  c.segments[0].dressing = 'nope';
+  assert.ok(validateRoute(c).errors.some((e) => /dressing/.test(e)));
+  const d2 = loadRouteJson();
+  d2.moods = { 'unknown-segment': { fog: '#aabbcc', density: 1 } };   // unknown segment id is tolerated (route may grow)
+  assert.deepEqual(validateRoute(d2).errors, []);
+});
+
 test('RouteModel: length ~1200 m, segments, profile blending, walkable', () => {
   const m = new RouteModel(loadRouteJson());
   assert.ok(m.length > 1150 && m.length < 1250, 'route length ' + m.length);

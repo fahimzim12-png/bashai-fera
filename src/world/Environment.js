@@ -1,6 +1,9 @@
 // Sky, sun, fog and the two lights. Deliberately restrained: one hemisphere light + one
 // directional light, NO real-time shadows (too costly for a Redmi 9).
+// Milestone 2: per-district "moods" (route JSON) tint fog + hemisphere ground along s,
+// blended across segment boundaries - a few colour writes per frame, no new GPU cost.
 import * as THREE from 'three';
+import { smoothstep } from '../core/MathUtil.js';
 
 export class Environment {
   constructor(scene, lighting) {
@@ -15,6 +18,12 @@ export class Environment {
     const d = lighting.sunDir;
     this.sun.position.set(d[0], d[1], d[2]).normalize().multiplyScalar(100);
     scene.add(this.sun);
+
+    // base mood = the global lighting block; district moods are deltas on top of it
+    this._default = { fog: new THREE.Color(lighting.fog), ground: new THREE.Color(lighting.hemiGround), density: 1 };
+    this._moodFog = new THREE.Color(); this._moodGrd = new THREE.Color(); this._mix = new THREE.Color();
+    this._viewDist = 220;
+    this._moodCache = null;
 
     // gradient sky dome (vertex colours): hazy warm horizon -> blue overhead
     const geo = new THREE.SphereGeometry(500, 16, 10);
@@ -44,8 +53,56 @@ export class Environment {
 
   /** Fog must hide chunk pop-in: it reaches full density a bit before the last streamed chunk ends. */
   setViewDistance(metres) {
-    this.scene.fog.far = metres;
-    this.scene.fog.near = metres * 0.22;
+    this._viewDist = metres;
+    this._applyMood(this._curMood || this._default);
+  }
+
+  /** Parse route.data.moods once per route (id -> colours + density). */
+  _moodsOf(route) {
+    if (this._moodCache && this._moodCache.route === route) return this._moodCache.map;
+    const map = new Map();
+    for (const [id, m] of Object.entries(route.data.moods || {})) {
+      if (!m || typeof m !== 'object' || id === 'note') continue;
+      map.set(id, {
+        fog: m.fog ? new THREE.Color(m.fog) : this._default.fog,
+        ground: m.hemiGround ? new THREE.Color(m.hemiGround) : this._default.ground,
+        density: Number.isFinite(m.density) ? m.density : 1,
+      });
+    }
+    this._moodCache = { route, map };
+    return map;
+  }
+
+  /** Per-frame (cheap): district fog/tint at route position s, blended across segment boundaries. */
+  updateAt(s, route) {
+    const segs = route.segments;
+    const i = route.segmentIndexAt(s);
+    const map = this._moodsOf(route);
+    const blend = segs[i].blend ?? 24;
+    let mood;
+    if (i > 0 && s < segs[i].s0 + blend) {
+      const prev = map.get(segs[i - 1].id) || this._default;
+      const cur = map.get(segs[i].id) || this._default;
+      const t = smoothstep((s - segs[i].s0) / blend);
+      this._mix.copy(prev.fog).lerp(cur.fog, t);
+      this._moodFog.copy(this._mix);
+      this._mix.copy(prev.ground).lerp(cur.ground, t);
+      this._moodGrd.copy(this._mix);
+      mood = { fog: this._moodFog, ground: this._moodGrd, density: prev.density + (cur.density - prev.density) * t };
+    } else {
+      mood = map.get(segs[i].id) || this._default;
+    }
+    this._curMood = mood;
+    this._applyMood(mood);
+  }
+
+  _applyMood(m) {
+    this.scene.fog.color.copy(m.fog);
+    this.scene.background.copy(m.fog);
+    this.hemi.groundColor.copy(m.ground);
+    const far = this._viewDist / m.density;
+    this.scene.fog.far = far;
+    this.scene.fog.near = far * 0.22;
   }
 
   follow(cameraPosition) { this.dome.position.copy(cameraPosition); }

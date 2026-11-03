@@ -11,6 +11,7 @@ import { assetUrl } from './paths.js';
 import { lerp } from './MathUtil.js';
 import { RouteModel } from '../world/RouteModel.js';
 import { ChunkManager } from '../world/ChunkManager.js';
+import { LandmarkManager } from '../world/LandmarkManager.js';
 import { Environment } from '../world/Environment.js';
 import { PlayerController } from '../player/PlayerController.js';
 import { PlayerAvatar } from '../player/PlayerAvatar.js';
@@ -85,6 +86,7 @@ export class Game {
     const groundMat = new THREE.MeshLambertMaterial({ vertexColors: true });
     const facadeMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: createFacadeTexture() });
     this.chunks = new ChunkManager({ scene: this.scene, route: this.route, groundMaterial: groundMat, facadeMaterial: facadeMat, aheadChunks: this.quality.tier.aheadChunks });
+    this.landmarks = new LandmarkManager({ scene: this.scene, route: this.route, material: groundMat });
     this.avatar = new PlayerAvatar(groundMat);
     this.scene.add(this.avatar.root);
 
@@ -239,6 +241,8 @@ export class Game {
     route.space.toWorld(p.s, p.x, this._w);
     this.avatar.setPose(this._w.x, this._w.z, Math.atan2(this._w.fx, this._w.fz), p.phase, p.vx / CONFIG.player.lateralMaxSpeed);
     if (active) this.chunks.update(p.s);
+    this.landmarks.update(p.s);
+    this.env.updateAt(p.s, route);
     this.env.follow(this.cameraRig.camera.position);
     this.renderer.render(this.scene, this.cameraRig.camera);
     this.dirty = false;
@@ -263,6 +267,7 @@ export class Game {
       calls: info.render.calls, triangles: info.render.triangles,
       geometries: info.memory.geometries, textures: info.memory.textures,
       chunks: this.chunks.loadedCount, buildLast: this.chunks.stats.lastBuildMs, buildMax: this.chunks.stats.maxBuildMs,
+      landmarks: this.landmarks.entries.length, landmarksVis: this.landmarks.visibleCount, landmarkTris: this.landmarks.stats.triangles,
       s: p.s, x: p.x, segment: this.route.segmentAt(p.s).name.en,
       state: this.sm.name, device: this.input.device, change: q.lastChange,
       gpu: this.profile.gpu || 'unknown',
