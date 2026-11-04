@@ -55,9 +55,11 @@ export class CameraRig {
   }
 
   // Narrow (portrait) views see very little sideways. Never let the player drift further sideways from the
-  // camera than half of what the lens can show at the player's distance, otherwise he walks off-screen.
+  // camera than most of what the lens can show at the player's distance, otherwise he walks off-screen.
+  // M5: factor raised 0.55 -> 0.95 — the old clamp pinned the camera against the left kerb,
+  // putting every viaduct pier dead-centre; the look-at bias keeps the player framed.
   _keepPlayerInView(player) {
-    const maxOff = this.cfg.distance * (this._tanH || 1) * 0.55;
+    const maxOff = this.cfg.distance * (this._tanH || 1) * 0.95;
     const off = player.x - this.xCam;
     if (off > maxOff) this.xCam = player.x - maxOff;
     else if (off < -maxOff) this.xCam = player.x + maxOff;
@@ -131,8 +133,8 @@ export class CameraRig {
           const e = easeOut(t);
           introPos = {
             s: player.s + 6.5 - 11.1 * e,
-            lat: player.x + 3.2 * (1 - e),
-            h: 1.45 + (c.height - 1.45) * e,
+            lat: player.x + 2.2 * (1 - e),          // M5: shallower lateral swing (stays clear of kerbside piers)
+            h: 1.7 + (c.height - 1.7) * e,
           };
         }
       }
@@ -148,7 +150,7 @@ export class CameraRig {
 
     // look target rides its own faster spring; lead into lateral motion
     const lookTargetS = player.s + c.lookAhead;
-    const lookTargetX = lerp(this.xCam, player.x + (player.vx || 0) * 0.3, 0.4);
+    const lookTargetX = lerp(this.xCam, player.x + (player.vx || 0) * 0.3, 0.32);   // M5: biased toward the street canyon
     this._springLook(lookTargetS, lookTargetX, d);
 
     this._apply(player, speedRatio, steer, introPos, revealLook);

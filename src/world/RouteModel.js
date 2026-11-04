@@ -93,7 +93,14 @@ export class RouteModel {
         const b = seg.buildings;
         if (rng.chance(b.gapChance ?? 0.08)) { s += rng.range(3, 9); continue; }   // alley / empty plot
         const w = rng.range(b.width[0], b.width[1]);
-        const floors = Math.max(2, Math.round(rng.range(b.height[0], b.height[1]) / 3.2));
+        const archetype = pickArchetype(b.archetypes, rng);
+        let floors = Math.max(2, Math.round(rng.range(b.height[0], b.height[1]) / 3.2));
+        // Milestone 5: per-archetype silhouette variety. Office towers climb well above
+        // the baseline (BDBL/BSEC/TCB family), institutions read taller, half-built
+        // blocks read stubbier — so the same weight table gives a varied skyline.
+        if (archetype === 'tower') floors += 4 + Math.round(rng.next() * 5);
+        else if (archetype === 'institutional') floors += 1;
+        else if (archetype === 'halfbuilt') floors = Math.max(2, floors - 1);
         const pal = this.palettes[b.palette];
         out.push({
           side,
@@ -105,7 +112,7 @@ export class RouteModel {
           wall: rng.pick(pal.walls),
           roof: rng.pick(pal.roofs),
           palette: b.palette,
-          archetype: pickArchetype(b.archetypes, rng),
+          archetype,
           seed: rng.int(1, 2147483646),
         });
         s += w + rng.range(0, 0.6);

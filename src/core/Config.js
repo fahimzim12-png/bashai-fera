@@ -14,14 +14,14 @@ export const CONFIG = Object.freeze({
     strideRate: 0.62,      // walk-cycle cycles per metre travelled
   },
   camera: {
-    distance: 4.6,         // metres behind the player (along the route)
-    height: 2.25,          // metres above the ground
-    lookAhead: 12,         // metres ahead the camera looks at
-    lookHeight: 1.15,
-    followLateral: 0.78,   // 1 = camera locks to player sideways, 0 = stays on route centre
+    distance: 5.0,         // metres behind the player (along the route) — M5: a touch further so the city breathes
+    height: 2.4,           // metres above the ground — M5: slightly higher horizon, more skyline in frame
+    lookAhead: 13.5,       // metres ahead the camera looks at — M5: deeper lead into the streetscape
+    lookHeight: 1.3,       // M5: gaze a little above the walker, buildings read as part of the shot
+    followLateral: 0.62,   // 1 = camera locks to player sideways, 0 = stays on route centre. M5: rides closer to the median so left-side viaduct piers frame the shot instead of blocking it
     damping: 6.5,          // legacy damping (kept for fov/compat maths)
     near: 0.4,
-    far: 800,
+    far: 900,              // M5: the painted sky + tower skyline need headroom beyond the old 800
     vFovBase: 58,          // preferred vertical field of view (degrees)
     hFovMin: 62,           // never narrower than this horizontally (portrait phones)
     hFovMax: 100,          // never wider than this (ultra-wide phones)
@@ -35,7 +35,7 @@ export const CONFIG = Object.freeze({
     steerDrift: 0.5,       // metres of lateral camera drift per unit of steering
     fovKick: 4,            // degrees of FOV widening at full stride
     fovPunch: 2.5,         // degrees of near-miss FOV punch
-    revealDistance: 6.2,   // camera pulls back to this at landmark reveals
+    revealDistance: 6.6,   // camera pulls back to this at landmark reveals (M5: bigger beat)
     revealTime: 2.5,       // seconds a reveal lasts (skippable by input)
     introTime: 3.5,        // seconds of opening dolly (skippable by input)
   },

@@ -113,6 +113,6 @@ test('RouteModel: buildings are deterministic, sorted, non-overlapping per side,
     for (let i = 1; i < list.length; i++) assert.ok(list[i].sMid - list[i].w / 2 >= list[i - 1].sMid + list[i - 1].w / 2 - 1e-6, 'no overlap');
   }
   assert.ok(a.length > 150, 'corridor still carries a dense streetwall: ' + a.length);
-  const valid = new Set(['institutional', 'midrise', 'commercial', 'marketBlock', 'halfbuilt']);
+  const valid = new Set(['institutional', 'midrise', 'commercial', 'marketBlock', 'halfbuilt', 'tower']);
   for (const bd of a) assert.ok(valid.has(bd.archetype), 'archetype ' + bd.archetype);
 });

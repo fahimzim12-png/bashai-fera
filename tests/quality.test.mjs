@@ -4,23 +4,46 @@ import { detectProfile, chooseTier, maxTierFor, TIERS } from '../src/render/tier
 import { AdaptiveQuality, MIN_SCALE } from '../src/render/AdaptiveQuality.js';
 import { computeVerticalFov } from '../src/camera/fov.js';
 
-const REDMI9_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36';
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36';
+const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0) Chrome/120';
 
-test('Redmi 9 style device (Android Chrome, Mali GPU) starts on LOW and is capped at medium', () => {
-  const p = detectProfile({ userAgent: REDMI9_UA, maxTouchPoints: 5, gpu: 'ANGLE (ARM, Mali-G52 MC2, OpenGL ES 3.2)', deviceMemory: 4, hardwareConcurrency: 8, dpr: 2.75, screenW: 393, screenH: 851 });
-  assert.ok(p.isMobile); assert.equal(chooseTier(p), 'low'); assert.equal(maxTierFor(p), 'medium');
-});
-test('even with a hidden GPU string, any Android phone starts LOW', () => {
-  const p = detectProfile({ userAgent: REDMI9_UA, maxTouchPoints: 5, gpu: '', screenW: 393, screenH: 851 });
+test('M5 policy: legacy mobile GPU (Mali-G52 / Adreno 5xx / PowerVR) falls back to LOW', () => {
+  const p = detectProfile({ userAgent: ANDROID_UA, maxTouchPoints: 5, gpu: 'ANGLE (ARM, Mali-G52 MC2, OpenGL ES 3.2)', deviceMemory: 4, hardwareConcurrency: 8, dpr: 2.75, screenW: 393, screenH: 851 });
+  assert.ok(p.isMobile); assert.ok(p.isLegacyGpu);
   assert.equal(chooseTier(p), 'low');
 });
+test('M5 policy: tiny memory phones (<=3GB) stay on LOW even with a modern GPU', () => {
+  const p = detectProfile({ userAgent: ANDROID_UA, maxTouchPoints: 5, gpu: 'ANGLE (Qualcomm, Adreno (TM) 730)', deviceMemory: 3, hardwareConcurrency: 8, dpr: 2, screenW: 384, screenH: 824 });
+  assert.ok(p.isMobile); assert.equal(chooseTier(p), 'low');
+});
+test('M5 policy: a modern mid-range phone starts on MEDIUM with shadows and AA (no Redmi-9 ceiling)', () => {
+  const p = detectProfile({ userAgent: ANDROID_UA, maxTouchPoints: 5, gpu: 'ANGLE (Qualcomm, Adreno (TM) 710)', deviceMemory: 6, hardwareConcurrency: 8, dpr: 2.6, screenW: 396, screenH: 872 });
+  assert.equal(chooseTier(p), 'medium');
+  assert.ok(TIERS.medium.antialias && TIERS.medium.shadows, 'medium carries the richer profile');
+});
+test('M5 policy: every device (phones included) may climb to HIGH through adaptive promotion', () => {
+  const m = detectProfile({ userAgent: ANDROID_UA, maxTouchPoints: 5, gpu: 'ANGLE (Qualcomm, Adreno (TM) 740)', deviceMemory: 8, dpr: 2.6 });
+  assert.equal(chooseTier(m), 'medium'); assert.equal(maxTierFor(m), 'high');
+});
+test('M5 policy: even a phone with a hidden GPU string gets the modern profile, not the old ceiling', () => {
+  const p = detectProfile({ userAgent: ANDROID_UA, maxTouchPoints: 5, gpu: '', deviceMemory: 8, screenW: 393, screenH: 851 });
+  assert.equal(chooseTier(p), 'medium'); assert.equal(maxTierFor(p), 'high');
+});
 test('desktop: discrete -> high, integrated -> medium, software -> low; override wins', () => {
-  const d = (gpu) => detectProfile({ userAgent: 'Mozilla/5.0 (Windows NT 10.0) Chrome/120', maxTouchPoints: 0, gpu, screenW: 1920, screenH: 1080 });
+  const d = (gpu) => detectProfile({ userAgent: DESKTOP_UA, maxTouchPoints: 0, gpu, screenW: 1920, screenH: 1080 });
   assert.equal(chooseTier(d('NVIDIA GeForce RTX 3060')), 'high');
   assert.equal(chooseTier(d('Intel(R) UHD Graphics 620')), 'medium');
   assert.equal(chooseTier(d('Google SwiftShader')), 'low');
   assert.equal(chooseTier(d('NVIDIA'), 'low'), 'low');
   assert.equal(maxTierFor(d('NVIDIA')), 'high');
+});
+test('tier table sanity: the flagship experience is rich, the fallback is cheap', () => {
+  assert.ok(TIERS.high.traffic > TIERS.medium.traffic && TIERS.medium.traffic > TIERS.low.traffic);
+  assert.ok(TIERS.high.crowd >= 60, `high crowd ${TIERS.high.crowd}`);
+  assert.ok(TIERS.high.shadowSize >= TIERS.medium.shadowSize);
+  assert.ok(TIERS.high.maxPixelRatio <= 2.0);
+  assert.equal(TIERS.low.targetFps, 30, 'fallback stays capped at 30 fps');
+  assert.ok(!TIERS.low.shadows && !TIERS.low.antialias);
 });
 
 const feed = (aq, ms, seconds, t0 = 0, fps) => {

@@ -5,7 +5,8 @@ Stack: Three.js (vendored), vanilla JavaScript ES modules, HTML/CSS, static host
 
 ## Confirmed design decisions
 1. First route: Farmgate → Karwan Bazar → SAARC Fountain, authored (not procedural noise), with variable traffic and hazards.
-2. Minimum device: Xiaomi Redmi 9 (Helio G80 / Mali-G52). Stronger devices get scalable quality.
+2. Minimum device (M5): modern mid-range Android + desktop browsers are the PRIMARY targets;
+   the Redmi 9 class survives only through the cheap LOW fallback tier. Stronger devices get scalable quality.
 3. Camera: third person, close behind the player, enough road visible to navigate.
 4. Movement: **automatic forward walking + player left/right steering.** Keyboard (A/D, arrows) and touch (hold left/right half).
    *No hold-to-wait mechanic* (not agreed). Do not add one without a decision.
@@ -58,13 +59,15 @@ docs/                  PROJECT_PLAN, ARCHITECTURE, DEVELOPMENT, MILESTONE2_PLAN
 * `clears` lets a landmark own a plot: generated buildings are suppressed there (market sheds, junction plaza).
 * Nothing outside `src/world/` reads landmark geometry; gameplay systems stay untouched.
 
-## Performance design (Redmi 9 first)
+## Performance design (M5: modern mid-range first, LOW tier as fallback)
 * One street chunk (60 m) = 2 draw calls (vertex-coloured + textured facades). Landmarks add <= 4 distance-culled
   static draws. Whole scene stays around ~16-22 draw calls; worst chunk ~1.7k triangles, all landmarks ~6.7k together.
 * No real-time shadows, 2 lights, no new shaders ("glow" = static emissive-bright vertex colours), fog hides streaming,
   static meshes (matrixAutoUpdate off), pooled chunk meshes.
-* Phones start on the LOW tier (render scale <= 1.0, 30 fps cap). `AdaptiveQuality` lowers resolution then tier when frames
+* Phones start on the MEDIUM tier (AA, real shadows, 34 vehicles / 48 people, 1.5x pixel ratio); legacy GPUs and
+  <=3GB devices fall back to LOW (30 fps cap, no shadows). `AdaptiveQuality` lowers resolution then tier when frames
   are late, and only raises quality after proving headroom (a failed promotion is reverted and never retried).
+  Every device may climb to HIGH — the adaptive controller guards heat/battery, no hard mobile ceiling.
 * `?debug=1` shows FPS, draw calls, triangles, memory, landmark counts, tier changes.
 
 ## Milestones
@@ -92,12 +95,12 @@ docs/                  PROJECT_PLAN, ARCHITECTURE, DEVELOPMENT, MILESTONE2_PLAN
 **City population (`src/city/`)**
 - `CrowdSystem.js` (pure) + `CrowdRenderer.js` (THREE): walkers/standers/talkers/tea-stall
   sitters/vendors/porters on footpaths only; whole crowd = 8 draw calls (InstancedMesh per
-  body part, per-instance clothing colours). Counts per tier: 14/24/36.
+  body part, per-instance clothing colours). Counts per tier: 24/48/64.
 - `TrafficSystem.js` (pure sim) + `TrafficRenderer.js`: 8 vehicle types, left-hand traffic
   (left carriageway +s, right oncoming), car-following, overtakes, recycle windows;
   every vehicle exposes (s, lat, dir, speed, len, wid) for future collision gameplay.
   Vehicles never leave the road elements. Emits `traffic:nearmiss` (camera shake + avatar
-  flinch) and `traffic:horn` (audio). Counts per tier: 12/18/26 (largest-remainder exact).
+  flinch) and `traffic:horn` (audio). Counts per tier: 16/34/46 (largest-remainder exact).
 - `src/world/dressing.js` — `stallSpots()` shared hash formula: CrowdSystem vendors/sitters
   anchor to exactly the stalls ChunkBuilder draws.
 
@@ -156,3 +159,28 @@ new textures: 1× sign atlas (1024²) + 1× 128 face + 1× 64 shirt; fonts 2 × 
 - **Protagonist**: sculpted sphere head with painted face (traits from `likeliness.js` —
   placeholders until the reference photographs arrive), elbows + hands, pelvis/shoulder
   counter-rotation from the shared walk cycle.
+
+## Milestone 5 additions (the living city)
+
+- **Raised hardware target** (`tiers.js`): medium = default for capable phones (AA + 1024px shadows +
+  1.5x pixel ratio), high = desktop/flagship (2048px shadows, 46 vehicles / 64 people, 9 streamed chunks),
+  low = cheap fallback only (old GPUs, <=3GB, software renderers). No more automatic mobile ceiling.
+- **Painted sky** (`Environment.paintSky`): one 1024x512 canvas — warm afternoon gradient landing exactly
+  on the dome equator (the visible horizon), cumulus banks + haze band, all static. Sun disc + halo placed
+  to match the directional light. Shadow map size now follows the tier.
+- **Dressing fields** (route JSON `segments[].dressing`): `trees` (raintree + palm canopies on footpath
+  outer edges), `busStops` (shelters with benches + readable BUS STOP boards; buses dwell 3-4.4 s in the
+  kerb lane), `kerbParking` (TrafficSystem hands the outer lane of that district to `ParkedVehicles`).
+- **ParkedVehicles** (`src/city/ParkedVehicles.js`): deterministic static fleet reusing the merged vehicle
+  geometry — Karwan Bazar staff buses/vans on the market-side kerb, cars/CNGs/rickshaws on the far kerb,
+  blob-shadowed, distance-culled, zero per-frame cost.
+- **Crowd behaviours**: zebra crossers (footbridge + fountain crossings, turn around at the far kerb) and
+  bus queues under the shelters, plus the M4 walkers/standers/talkers/sitters/vendors/porters.
+- **Building variety**: `tower` archetype (fins + roof crown + beacon mast, floors +4..8 — BDBL/BSEC
+  family), waist ledge bands on tall buildings, rooftop water tanks on stands + satellite dishes everywhere,
+  deeper facade weathering (seepage, mould, repaint patches, poster ghosts).
+- **Camera v3**: followLateral 0.62 + a relaxed in-view clamp — the rig rides toward the street canyon so
+  viaduct piers frame the shot instead of blocking it; look bias 0.32 keeps the player on the left third.
+- **Fixes**: MRT station access towers no longer straddle the walkable strip (now kerbside columns +
+  inclined stairs crossing ABOVE the footpath); road atlas base lifted (#50545a) so shadowed asphalt keeps
+  detail; THREE vendored-import in GeometryUtil/BlobShadow for Node testability.

@@ -13,7 +13,7 @@ import { lerp } from '../core/MathUtil.js';
 import { GeometryBuilder, hexToLinear, shade } from '../render/GeometryBuilder.js';
 import { ROAD_U, PATH_U, MEDIAN_U, ROAD_V_METRES, PATH_V_METRES, MEDIAN_V_METRES } from '../render/RoadAtlasUV.js';
 import { clearsBuildings } from './landmarks/registry.js';
-import { pickDesign, designUV, designSpanWidth } from './signCatalog.js';
+import { pickDesign, designUV, designSpanWidth, designByText } from './signCatalog.js';
 
 const UP = [0, 1, 0];
 const TARPS = ['#2f6ea8', '#c4552f', '#3fae6b'];
@@ -23,7 +23,13 @@ const PLASTIC = ['#c94f3f', '#3f7dc9', '#3fae6b', '#e2b23f'];
 const DOWN = [0, -1, 0];
 const POLE_SPACING = 32;
 const LAMP_SPACING = 36;
+const TREE_SPACING = 15;
 const DASH = 3, DASH_PERIOD = 6;
+// Milestone 5: rooftop + tree palettes (water tanks, dishes, raintree/palm canopy)
+const TANKS = ['#1d2a33', '#22333d', '#e8e6df'];
+const CANOPY = ['#55703c', '#4c6636', '#5d7a42', '#6b7a3c'];
+const CANOPY_DRY = ['#7d7a3c', '#8a8248', '#6b7042'];
+const TOWER_ATLAS = new Set(['commercial', 'marketBlock', 'halfbuilt', 'tower']);
 
 const W = (f, lat, y) => [f.x + f.rx * lat, y, f.z + f.rz * lat];          // route frame -> world point
 const poleS = (side, k) => k * POLE_SPACING + (hashString(`pole:${side}:${k}`) / 4294967296) * 6;
@@ -64,6 +70,8 @@ export function buildChunk(route, ci) {
   streetLife(ground, route, s0, s1);
   crossings(ground, route, s0, s1);
   wallACUnits(ground, route, s0, s1);
+  trees(ground, route, s0, s1);
+  busShelters(ground, signs, route, s0, s1);
 
   return { ground: ground.finish(), pave: pave.finish(), facade: facadeA.finish(), facadeB: facadeB.finish(), signs: signs.finish(), ci, s0, s1 };
 }
@@ -219,7 +227,8 @@ function lamps(g, route, s0, s1) {
 // (institutional / midrise / commercial / marketBlock / halfbuilt). Archetype decides which
 // of the two facade atlases is used and what silhouette extras are built (porticos, balcony
 // rows, parapets, sign stacks, rebar + bamboo + netting on half-finished tops).
-const COMMERCIAL_ATLAS = new Set(['commercial', 'marketBlock', 'halfbuilt']);
+// Milestone 5: towers share the commercial atlas (mirror glass / AC bands read as offices).
+const COMMERCIAL_ATLAS = TOWER_ATLAS;
 
 function buildings(g, fac, facB, sg, route, s0, s1) {
   const f = {};
@@ -273,11 +282,58 @@ function buildings(g, fac, facB, sg, route, s0, s1) {
         g.box(P(bx, front + side * 0.4, topY - 0.4), rf, rr, 0.06, 3.4, 0.06, '#b8a25c', { skipBottom: true });
       }
       g.quad(P(-hw, front - side * 0.02, topY + 0.2), P(hw, front - side * 0.02, topY + 0.2), P(hw, front - side * 0.02, y1), P(-hw, front - side * 0.02, y1), '#7fae6b', { hint: toRoad });
-    } else if (r.chance(0.45)) {
-      g.box(roofPt(r.range(-hw / 2, hw / 2), front + side * b.depth * 0.6), rf, rr, 1.6, 1.4, 1.6, '#3f5566', { skipBottom: true });
+    } else {
+      // Milestone 5 rooftop kit — the skyline silhouette Dhaka actually has:
+      // a plastic water tank on a steel stand (almost every roof), a rooftop shack,
+      // and a satellite dish aimed at the road.
+      if (r.chance(0.62)) {
+        const tx = r.range(-hw * 0.6, hw * 0.6), tz = front + side * b.depth * r.range(0.3, 0.7);
+        const tank = r.pick(TANKS);
+        g.box(P(tx, tz, y1), rf, rr, 0.08, 0.42, 0.08, '#5c5c5c', { skipBottom: true });   // stand leg
+        g.box(P(tx + 0.14, tz, y1), rf, rr, 0.08, 0.42, 0.08, '#5c5c5c', { skipBottom: true });
+        g.box(P(tx, tz + 0.14, y1), rf, rr, 0.08, 0.42, 0.08, '#5c5c5c', { skipBottom: true });
+        g.box(P(tx, tz, y1 + 0.4), rf, rr, 0.82, 0.72, 0.82, tank, { skipBottom: true, top: shade(hexToLinear(tank), 1.15) });
+      }
+      if (r.chance(0.22)) {
+        const dx2 = r.range(-hw * 0.5, hw * 0.5), dz2 = front + side * b.depth * r.range(0.25, 0.6);
+        const dc = P(dx2, dz2, y1 + 0.55);
+        const aim = [toRoad[0], 1.15, toRoad[2]];
+        for (let j = 0; j < 8; j++) {
+          const a = (j / 8) * Math.PI * 2, a2 = ((j + 1) / 8) * Math.PI * 2;
+          const r1 = 0.42;
+          g.tri([dc[0] + aim[0] * 0.16, dc[1] + aim[1] * 0.16, dc[2] + aim[2] * 0.16],
+            [dc[0] + Math.sin(a) * r1, dc[1] + Math.cos(a) * r1 * 0.35, dc[2] + Math.cos(a) * r1],
+            [dc[0] + Math.sin(a2) * r1, dc[1] + Math.cos(a2) * r1 * 0.35, dc[2] + Math.cos(a2) * r1],
+            '#c9cdc9', aim);
+        }
+        g.box(P(dx2, dz2, y1), rf, rr, 0.06, 0.6, 0.06, '#4a4a4a', { skipBottom: true });   // dish pole
+      }
     }
     if (arch !== 'halfbuilt' && r.chance(0.25)) {
       g.box(roofPt(r.range(-hw / 2, hw / 2), front + side * b.depth * 0.35), rf, rr, 3.0, 2.4, 3.0, shade(wall, 0.8), { skipBottom: true });
+    }
+    // Milestone 5: tower archetype — glassy office block with vertical fins, a roof
+    // crown, mechanical penthouse and a red-beacon mast (BDBL/BSEC silhouette family).
+    if (arch === 'tower') {
+      const fins = Math.max(3, Math.round(b.w / 3));
+      for (let j = 0; j <= fins; j++) {
+        const fx2 = -hw + (j / fins) * b.w;
+        g.box(P(fx2, front - side * 0.13, 3.6), rf, rr, 0.3, topY - 3.4, 0.3, shade(wall, 1.14), { skipBottom: true });
+      }
+      g.box(P(0, front - side * 0.12, y1), rf, rr, b.w, 0.7, 0.28, shade(wall, 1.08), { skipBottom: true });
+      const mx = r.range(-hw * 0.3, hw * 0.3);
+      g.box(P(mx, front + side * b.depth * 0.5, y1), rf, rr, b.w * 0.42, 1.7, 2.4, shade(wall, 0.82), { skipBottom: true });
+      g.box(P(mx, front + side * b.depth * 0.5, y1 + 1.7), rf, rr, 0.08, 3.6, 0.08, '#4a4a4a', { skipBottom: true });
+      g.box(P(mx, front + side * b.depth * 0.5, y1 + 5.3), rf, rr, 0.14, 0.14, 0.14, '#d63a2f', { skipBottom: true });
+    }
+    // Milestone 5: waist ledge bands on tall buildings — breaks the elevator-shaft
+    // silhouette into floors of different programmes (a cheap, convincing setback cue).
+    if (b.h > 24 && arch !== 'halfbuilt') {
+      const bands = b.h > 34 ? 2 : 1;
+      for (let k = 1; k <= bands; k++) {
+        const by = Math.round(b.h * (k === 1 ? 0.42 : 0.72));
+        g.box(P(0, front - side * 0.1, by), rf, rr, b.w, 0.28, 0.2, shade(wall, 1.05), { skipBottom: true });
+      }
     }
     // archetype rooftop kits
     if (arch === 'institutional' && r.chance(0.6)) {
@@ -445,7 +501,7 @@ function stains(g, route, s0, s1) {
     const s = k * 7 + (hashString(`stain:${k}`) / 4294967296) * 5;
     if (s < s0 || s >= s1) continue;
     const dr = route.segmentAt(s).dressing || {};
-    if (!((dr.stains ?? 0.08) > 0.15)) continue;
+    if (!((dr.stains ?? 0.08) >= 0.1)) continue;
     const h1 = hashString(`stainx:${k}`) / 4294967296, h2 = hashString(`stainr:${k}`) / 4294967296;
     route.space.sample(s, f);
     const road = route.profileAt(s).elements.find((e) => e.kind === 'road' && e.x0 < 0);
@@ -654,6 +710,106 @@ function wallACUnits(g, route, s0, s1) {
       g.quad(P(ax - 0.2, front - b.side * 0.01, 0.5), P(ax + 0.2, front - b.side * 0.01, 0.5),
         P(ax + 0.26, front - b.side * 0.01, ay - 0.25), P(ax - 0.26, front - b.side * 0.01, ay - 0.25),
         shade(hexToLinear('#8a8578'), 0.85), { hint: [-b.side * f.rx, 0, -b.side * f.rz] });
+    }
+  }
+}
+
+// ---- Street trees & palms (Milestone 5) ----------------------------------------------------
+// Per-district greenery from dressing.trees. Planted on the OUTER edge of each footpath,
+// clear of the walkable strip and of building fronts, skipped where landmarks own the
+// plot (footbridge plaza, market sheds). Two species: broadleaf raintree (two canopy
+// blobs) and palm (trunk + radiating fronds) — the second instantly says "Dhaka avenue".
+function canopyBlob(g, cx, cy, cz, r, col, hi, lo) {
+  const RING = 6;
+  for (let j = 0; j < RING; j++) {
+    const a = (j / RING) * Math.PI * 2, a2 = ((j + 1) / RING) * Math.PI * 2;
+    const p1 = [cx + Math.sin(a) * r, cy, cz + Math.cos(a) * r];
+    const p2 = [cx + Math.sin(a2) * r, cy, cz + Math.cos(a2) * r];
+    g.tri([cx, cy + r * 0.85, cz], p1, p2, j % 2 ? hi : col, [0, 1, 0]);
+    g.tri([cx, cy - r * 0.5, cz], p1, p2, j % 2 ? lo : shade(lo, 0.9), [0, -1, 0]);
+  }
+}
+
+function trees(g, route, s0, s1) {
+  const f = {};
+  for (const side of [-1, 1]) {
+    for (let k = Math.floor(s0 / TREE_SPACING) - 1; k * TREE_SPACING < s1 + TREE_SPACING; k++) {
+      const s = k * TREE_SPACING + (hashString(`tree:${side}:${k}`) / 4294967296) * 7;
+      if (s < s0 || s >= s1) continue;
+      const dr = route.segmentAt(s).dressing || {};
+      if (hashString(`treec:${side}:${k}`) / 4294967296 > (dr.trees ?? 0)) continue;
+      if (route.landmarks.some((lm) => clearsBuildings(lm, side, s))) continue;
+      route.space.sample(s, f);
+      const fp = route.profileAt(s).elements.filter((e) => e.kind === 'footpath');
+      const fpEl = side < 0 ? fp[0] : fp[fp.length - 1];
+      if (!fpEl) continue;
+      const lat = side < 0 ? fpEl.x0 + 0.55 : fpEl.x1 - 0.55;
+      const bx = f.x + f.rx * lat, bz = f.z + f.rz * lat;
+      const dry = hashString(`treey:${side}:${k}`) / 4294967296 < 0.22;      // dry-season olive
+      const base = dry ? CANOPY_DRY : CANOPY;
+      const col = hexToLinear(base[((k % base.length) + base.length) % base.length]);
+      const col2 = shade(col, 1.1), col3 = shade(col, 0.82);
+      const palm = hashString(`treep:${side}:${k}`) / 4294967296 < 0.26;
+      if (palm) {
+        const h = 3.8 + (hashString(`treeh:${side}:${k}`) % 18) / 10;
+        g.box([bx, 0.18, bz], [f.fx, f.fz], [f.rx, f.rz], 0.17, h, 0.17, '#8a7350', { skipBottom: true });
+        for (let j = 0; j < 7; j++) {
+          const a = (j / 7) * Math.PI * 2 + (hashString(`treea:${side}:${k}:${j}`) / 4294967296) * 0.7;
+          const dx = Math.sin(a), dz = Math.cos(a);
+          const L = 1.45 + (hashString(`treel:${side}:${k}:${j}`) / 4294967296) * 0.75;
+          const cy = 0.18 + h, tipY = cy - 0.62;
+          g.quad([bx - dz * 0.14, cy + 0.1, bz + dx * 0.14], [bx + dz * 0.14, cy + 0.1, bz - dx * 0.14],
+            [bx + dx * L - dz * 0.04, tipY, bz + dz * L + dx * 0.04], [bx + dx * L + dz * 0.04, tipY - 0.08, bz + dz * L - dx * 0.04],
+            col, { double: true });
+        }
+      } else {
+        const h = 2.6 + (hashString(`treeh2:${side}:${k}`) % 14) / 10;
+        g.box([bx, 0.18, bz], [f.fx, f.fz], [f.rx, f.rz], 0.26, h, 0.26, '#6b5138', { skipBottom: true });
+        const r1 = 1.5 + (hashString(`treer:${side}:${k}`) % 9) / 10;
+        canopyBlob(g, bx, 0.18 + h + r1 * 0.55, bz, r1, col, col2, col3);
+        canopyBlob(g, bx + (hashString(`treeo:${side}:${k}`) / 4294967296 - 0.5) * 1.2,
+          0.18 + h + r1 * 1.45, bz + (hashString(`treeo2:${side}:${k}`) / 4294967296 - 0.5) * 1.2,
+          r1 * 0.62, col2, shade(col2, 1.08), col3);
+      }
+    }
+  }
+}
+
+// ---- Bus stop shelters (Milestone 5) --------------------------------------------------------
+// dressing.busStops lists the s positions (from the real corridor: Farmgate bus bay under
+// the footbridge, an avenue stop, a Karwan Bazar stop). Shelters sit against the building
+// edge of the LEFT footpath (player side) with a bench, back panel and a readable
+// 'BUS STOP' signboard from the shared atlas.
+function busShelters(g, sg, route, s0, s1) {
+  const f = {};
+  const frame = hexToLinear('#3c4045'), roof = hexToLinear('#2e6e5e'), panel = hexToLinear('#c9d2d4');
+  const bench = hexToLinear('#8a6b42');
+  for (const seg of route.segments) {
+    const stops = (seg.dressing && seg.dressing.busStops) || [];
+    for (const stS of stops) {
+      if (stS < s0 - 3 || stS >= s1 + 3) continue;
+      route.space.sample(stS, f);
+      const fp = route.profileAt(stS).elements.filter((e) => e.kind === 'footpath');
+      const left = fp[0];
+      if (!left) continue;
+      const lat = left.x0 + 0.75;                       // building-side edge of the left footpath
+      const P = (ls, lt, y) => [f.x + f.fx * ls + f.rx * lt, y, f.z + f.fz * ls + f.rz * lt];
+      const ff = [f.fx, f.fz], rr = [f.rx, f.rz];
+      const hw2 = 2.2;
+      for (const px of [-hw2 + 0.1, 0, hw2 - 0.1]) {
+        g.box(P(px, lat, 0.18), ff, rr, 0.09, 2.5, 0.09, frame, { skipBottom: true });
+      }
+      g.box(P(0, lat + 0.75, 2.68), ff, rr, hw2 * 2, 0.1, 1.5, roof, { skipBottom: true, top: shade(roof, 1.2) });   // roof
+      g.box(P(0, lat + 1.38, 1.2), ff, rr, hw2 * 2, 2.1, 0.05, panel, { skipBottom: true });                        // back panel
+      g.box(P(0, lat + 0.35, 0.62), ff, rr, hw2 * 2 - 0.3, 0.07, 0.45, bench, { skipBottom: true });                // bench seat
+      g.box(P(-hw2 + 0.45, lat + 0.35, 0.45), ff, rr, 0.06, 0.42, 0.4, frame, { skipBottom: true });
+      g.box(P(hw2 - 0.45, lat + 0.35, 0.45), ff, rr, 0.06, 0.42, 0.4, frame, { skipBottom: true });
+      // readable nameboard above the roof edge, facing the road
+      const di = designByText('BUS STOP');
+      const du = designUV(di), wS = designSpanWidth(di);
+      const latS = lat + 0.7;
+      sg.quad(P(-wS / 2, latS, 2.78), P(wS / 2, latS, 2.78), P(wS / 2, latS, 3.38), P(-wS / 2, latS, 3.38), '#ffffff',
+        { hint: [-f.rx, 0, -f.rz], uv: [[du[0], du[1]], [du[2], du[1]], [du[2], du[3]], [du[0], du[3]]] });
     }
   }
 }

@@ -79,16 +79,31 @@ export function buildStation(g, sg, route, lm) {
     g.box([fp.x + fp.rx * -6.0, 8.6, fp.z + fp.rz * -6.0], [fp.fx, fp.fz], [fp.rx, fp.rz], 0.8, 1.2, 3.6, concrete, { skipBottom: true });
   }
 
-  // two access towers on the footpaths + link bridges + READABLE nameboards
+  // two station accesses + link bridges + READABLE nameboards.
+  // M5 fix: the old access towers were 3.4 m-wide boxes straddling lat ±14.4 — the middle
+  // of the player's walkable strip (he walked straight through them). Access is now a
+  // stair on slim columns hugging the footpath's OUTER edge (lat ~15.8), rising OVER the
+  // walkway to the deck link, exactly how the real MRT gates land: nothing blocks the
+  // footpath, nothing intersects the building line behind the frontage.
   const di = designByText(lm.name ? lm.name.en : 'FARMGATE');
   for (const sd of [-1, 1]) {
     const f = route.space.sample(lm.s + sd * (L / 2 - 14), {});
-    const lat = sd * 14.4;
-    g.box([f.x + f.rx * lat, 0, f.z + f.rz * lat], [f.fx, f.fz], [f.rx, f.rz], 4.2, 12.4, 3.4, body, { skipBottom: true });
-    g.box([f.x + f.rx * (lat - sd * 1.76), 3.6, f.z + f.rz * (lat - sd * 1.76)], [f.fx, f.fz], [f.rx, f.rz], 0.12, 6.4, 0.6, glass, { skipBottom: true });
-    beam(g, [f.x + f.rx * lat, 11.6, f.z + f.rz * lat], [f.x + f.rx * sd * 5.6, 12.4, f.z + f.rz * sd * 5.6], 0.16, 1.25, shade(body, 0.88), {});
+    const colLat = sd * 15.9;
+    for (const dl of [-0.55, 0.55]) {                     // slim columns on the footpath's outer edge (clear of the walkable band)
+      g.box([f.x + f.rx * (colLat + dl), 0, f.z + f.rz * (colLat + dl)], [f.fx, f.fz], [f.rx, f.rz], 0.28, 11.6, 0.28, shade(body, 0.94), { skipBottom: true });
+    }
+    // inclined stair: footpath kerb -> deck edge (crosses ABOVE the walkable strip).
+    // A 1.6 m slab flanked by two thin balustrade planes, plus the deck link.
+    const A0 = [f.x + f.rx * (sd * 15.2), 0.5, f.z + f.rz * (sd * 15.2)];
+    const A1 = [f.x + f.rx * (sd * 7.2), 12.1, f.z + f.rz * (sd * 7.2)];
+    const off = (p, d) => [p[0] + f.fx * d, p[1], p[2] + f.fz * d];
+    beam(g, A0, A1, 0.8, 0.12, shade(body, 0.9), {});                    // stair slab
+    beam(g, off(A0, -0.95), off(A1, -0.95), 0.8, 0.03, shade(body, 0.8), {});   // balustrade
+    beam(g, off(A0, 0.95), off(A1, 0.95), 0.8, 0.03, shade(body, 0.8), {});     // balustrade
+    // stair landing -> deck link
+    beam(g, [f.x + f.rx * (sd * 7.4), 12.2, f.z + f.rz * (sd * 7.4)], [f.x + f.rx * (sd * 5.6), 12.4, f.z + f.rz * (sd * 5.6)], 0.16, 1.25, shade(body, 0.88), {});
     // nameboard: green band + sign-atlas quad (Bangla headline + Latin subtext)
-    const bLat = lat - sd * 1.78;
+    const bLat = sd * 14.6;
     g.quad([f.x + f.rx * bLat - f.fx * 1.7, 9.0, f.z + f.rz * bLat - f.fz * 1.7],
            [f.x + f.rx * bLat + f.fx * 1.7, 9.0, f.z + f.rz * bLat + f.fz * 1.7],
            [f.x + f.rx * bLat + f.fx * 1.7, 10.4, f.z + f.rz * bLat + f.fz * 1.7],

@@ -48,6 +48,18 @@ export const DESIGNS = [
   SH('পাইকারি ফল আড়ৎ', 'FRUIT ARAT', '#7c2d12', '#fff7ed', '#fbbf24', 'shop'),
   SH('পাইকারি মাছ বাজার', 'FISH MARKET', '#0c4a6e', '#e0f2fe', '#38bdf8', 'shop'),
   SH('কাঁচা মাছ-মাংস নিষিদ্ধ', 'NO RAW PRODUCE', '#7f1d1d', '#fee2e2', '#fbbf24', 'ad'),
+  // Milestone 5: district-flavoured signage — Karwan Bazar wholesale rows, Farmgate
+  // commerce, avenue offices. Same fictional-but-believable discipline as the rest.
+  SH('আলু পেঁয়াজ পাইকারি', 'ONION POTATO WHOLESALE', '#4a2d0c', '#fff3e0', '#fbbf24', 'shop'),
+  SH('মিন্টু মাছ ঘর', 'MINTU FISH HOUSE', '#0c4a6e', '#e0f2fe', '#38bdf8', 'shop'),
+  SH('কাঁচা বাজার', 'KACHA BAZAR', '#155e2f', '#f0fdf4', '#facc15', 'shop'),
+  SH('ফার্মগেট স্টোর', 'FARMGATE STORE', '#7c2d12', '#fff7ed', '#fbbf24', 'shop'),
+  SH('চা-নাস্তা ঘর', 'CHA AND NASHTA', '#3f2d12', '#fffbeb', '#f59e0b', 'shop'),
+  SH('নগর ক্লিনিক', 'NAGAR CLINIC', '#0f766e', '#f0fdfa', '#22d3ee', 'shop'),
+  SH('বই ও কাগজ হাউস', 'BOOKS AND PAPER', '#1e3a8a', '#eff6ff', '#fbbf24', 'shop'),
+  SH('ইলেকট্রনিক্স পাইকারি', 'ELECTRONICS WHOLESALE', '#312e81', '#eef2ff', '#38bdf8', 'shop'),
+  SH('ফলের আড়ত', 'FRUIT DEPOT', '#7c2d12', '#fff7ed', '#facc15', 'shop'),
+  SH('বাস স্টপ', 'BUS STOP', '#1f2937', '#f9fafb', '#facc15', 'shop'),
 ];
 
 // Pack designs into the atlas grid (span-2 designs sit on even columns).

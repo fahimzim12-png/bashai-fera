@@ -21,7 +21,9 @@ export function createRoadTexture() {
   const rng = new Rng('roads-v1');
 
   // ---- road region [0..320) -------------------------------------------------
-  ctx.fillStyle = '#3b3e42';
+  // M5: base lifted from #3b3e42 — in linear light under hemi-only (viaduct shadow) the
+  // old value read near-black; this still reads as weathered asphalt but keeps detail.
+  ctx.fillStyle = '#50545a';
   ctx.fillRect(0, 0, 320, size);
   // wheel-polish bands at lane centres (3 lanes across 9.6 m -> u 1/6, 3/6, 5/6 of 320 px)
   for (const cx of [320 / 6, 320 / 2, (320 * 5) / 6]) {

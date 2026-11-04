@@ -1,9 +1,84 @@
-// Sky, sun, fog and the two lights. Deliberately restrained: one hemisphere light + one
-// directional light, NO real-time shadows (too costly for a Redmi 9).
-// Milestone 2: per-district "moods" (route JSON) tint fog + hemisphere ground along s,
-// blended across segment boundaries - a few colour writes per frame, no new GPU cost.
+// Sky, sun, fog and the two lights (Milestone 5 rewrite).
+//
+// The old flat vertex-colour dome became ONE painted canvas sky: a warm Dhaka-afternoon
+// gradient, soft cumulus banks along the horizon and a haze band — painted once at
+// start-up, zero per-frame cost. The art direction lives in paintSky() so other times of
+// day can be introduced later by painting a different canvas (the lighting JSON already
+// carries per-district moods).
+//
+// The sun stays a real placed disc (halo + core) so its direction always matches the
+// directional light that drives the shadow map. Shadow map SIZE now follows the quality
+// tier (M5 raised the hardware target: medium = 1024, high = 2048).
 import * as THREE from 'three';
 import { smoothstep } from '../core/MathUtil.js';
+import { Rng } from '../core/Rng.js';
+
+/** Paints the daytime sky: gradient + cumulus banks + haze. Returns a CanvasTexture. */
+export function paintSky({ skyTop, skyHorizon, seed = 'sky-m5' } = {}) {
+  const W = 1024, H = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const rng = new Rng(seed);
+  const top = skyTop || '#7fa3c4', hor = skyHorizon || '#e8d2ae';
+
+  // vertical gradient: deep blue overhead -> warm haze AT the horizon (canvas y 0.5 = dome
+  // equator = what a ground camera sees as the horizon line; below it stays warm)
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, top);
+  g.addColorStop(0.3, '#a9c1d6');
+  g.addColorStop(0.44, '#d6cbb2');
+  g.addColorStop(0.5, hor);
+  g.addColorStop(1, hor);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // distant haze band hovering just above the horizon line
+  const hz = ctx.createLinearGradient(0, H * 0.40, 0, H * 0.52);
+  hz.addColorStop(0, 'rgba(255,244,224,0)');
+  hz.addColorStop(0.6, 'rgba(255,244,224,0.34)');
+  hz.addColorStop(1, 'rgba(255,244,224,0)');
+  ctx.fillStyle = hz;
+  ctx.fillRect(0, H * 0.40, W, H * 0.12);
+
+  // cumulus banks: clusters of soft ellipses riding ABOVE the horizon (v > 0.5 = sky),
+  // wrapped at the u seam. Canvas y 0.30..0.46H maps to elevations of roughly 2-20 degrees
+  // on the dome — where a ground-level camera actually sees sky.
+  const cloud = (cx, cy, s, alpha) => {
+    for (const ox of [0, -W, W]) {                       // draw thrice: seamless wrap
+      const x0 = cx + ox;
+      ctx.fillStyle = `rgba(255,253,248,${alpha})`;
+      for (let b = 0; b < 5; b++) {
+        const bx = x0 + (b - 2) * 26 * s + (rng.next() - 0.5) * 14 * s;
+        const by = cy + (rng.next() - 0.5) * 8 * s;
+        ctx.beginPath();
+        ctx.ellipse(bx, by, (26 + rng.next() * 22) * s, (11 + rng.next() * 8) * s, 0, 0, 7);
+        ctx.fill();
+      }
+      // shaded belly
+      ctx.fillStyle = `rgba(206,208,208,${alpha * 0.55})`;
+      ctx.beginPath();
+      ctx.ellipse(x0 + (rng.next() - 0.5) * 30 * s, cy + 9 * s, 44 * s, 8 * s, 0, 0, 7);
+      ctx.fill();
+    }
+  };
+  for (let i = 0; i < 9; i++) {
+    const cx = rng.next() * W;
+    const cy = H * (0.28 + rng.next() * 0.13);           // well above the horizon line
+    cloud(cx, cy, 0.7 + rng.next() * 0.9, 0.5 + rng.next() * 0.3);
+  }
+  for (let i = 0; i < 6; i++) {                          // faint far strip hugging the haze
+    const cx = rng.next() * W, cy = H * (0.415 + rng.next() * 0.05);
+    cloud(cx, cy, 0.5 + rng.next() * 0.4, 0.28 + rng.next() * 0.18);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;                      // u wraps the sphere
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 1;
+  return tex;
+}
 
 export class Environment {
   constructor(scene, lighting) {
@@ -26,30 +101,32 @@ export class Environment {
     this._viewDist = 220;
     this._moodCache = null;
 
-    // gradient sky dome (vertex colours): hazy warm horizon -> blue overhead
-    const geo = new THREE.SphereGeometry(500, 16, 10);
-    const top = new THREE.Color(lighting.skyTop), hor = new THREE.Color(lighting.skyHorizon);
-    const pos = geo.attributes.position, colors = new Float32Array(pos.count * 3), c = new THREE.Color();
-    for (let i = 0; i < pos.count; i++) {
-      const y = Math.max(0, pos.getY(i) / 500);
-      c.copy(hor).lerp(top, Math.pow(y, 0.55));
-      colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
-    }
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    this.dome = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+    // painted sky dome (M5): gradient + cumulus + haze in one canvas texture
+    const geo = new THREE.SphereGeometry(500, 24, 12);
+    this.dome = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+      map: paintSky({ skyTop: lighting.skyTop, skyHorizon: lighting.skyHorizon, seed: lighting.skySeed || 'sky-m5' }),
+      side: THREE.BackSide, fog: false, depthWrite: false,
+    }));
     this.dome.frustumCulled = false;
     this.dome.renderOrder = -10;
     scene.add(this.dome);
 
-    // soft sun disc low in the sky
+    // sun disc + halo, placed to match the directional light exactly
+    const sunGroup = new THREE.Group();
+    const halo = new THREE.Mesh(
+      new THREE.CircleGeometry(58, 24),
+      new THREE.MeshBasicMaterial({ color: 0xfff3d2, fog: false, depthWrite: false, transparent: true, opacity: 0.22 }),
+    );
     const sunDisc = new THREE.Mesh(
       new THREE.CircleGeometry(26, 20),
-      new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false, depthWrite: false, transparent: true, opacity: 0.9 }),
+      new THREE.MeshBasicMaterial({ color: 0xfff6dc, fog: false, depthWrite: false, transparent: true, opacity: 0.95 }),
     );
-    sunDisc.position.copy(this.sun.position).normalize().multiplyScalar(470);
-    sunDisc.lookAt(0, 0, 0);
-    sunDisc.renderOrder = -9;
-    this.dome.add(sunDisc);
+    halo.position.z = -1;
+    sunGroup.add(halo, sunDisc);
+    sunGroup.position.copy(this.sun.position).normalize().multiplyScalar(470);
+    sunGroup.lookAt(0, 0, 0);
+    sunGroup.renderOrder = -9;
+    this.dome.add(sunGroup);
   }
 
   /** Fog must hide chunk pop-in: it reaches full density a bit before the last streamed chunk ends. */
@@ -103,28 +180,33 @@ export class Environment {
     this.hemi.groundColor.copy(m.ground);
     const far = this._viewDist / m.density;
     this.scene.fog.far = far;
-    this.scene.fog.near = far * 0.22;
+    this.scene.fog.near = far * 0.30;                    // M5: the city stays visible deeper into the haze
   }
 
   follow(cameraPosition) { this.dome.position.copy(cameraPosition); }
 
-  // ---- Milestone 4: real shadows on the high tier ------------------------------------------
-  // ONE directional shadow map with a tight ortho box that follows the player. Low/medium
-  // tiers keep the free blob decals only. Sun geometry never changes - only this map.
-  setShadows(enabled) {
+  // ---- Real shadows on the capable tiers ----------------------------------------------------
+  // ONE directional shadow map with a tight ortho box that follows the player. The map
+  // size follows the tier (medium 1024 / high 2048) — resizing disposes the old map.
+  setShadows(enabled, size = 1024) {
     const want = !!enabled;
-    if (this._shadowsOn === want) return;
+    if (this._shadowsOn === want && this._shadowSize === size) return;
+    this._shadowSize = size;
     this._shadowsOn = want;
     this.sun.castShadow = want;
-    if (want && !this._shadowConfigured) {
+    if (!this._shadowConfigured) {
       this._shadowConfigured = true;
       const s = this.sun.shadow;
-      s.mapSize.set(1024, 1024);
       s.camera.left = -45; s.camera.right = 45;
       s.camera.top = 45; s.camera.bottom = -45;
       s.camera.near = 20; s.camera.far = 260;
       s.bias = -0.0008;
       s.normalBias = 0.6;
+    }
+    const s = this.sun.shadow;
+    if (s.mapSize.x !== size) {
+      if (s.map) { s.map.dispose(); s.map = null; }      // force re-allocation at the new size
+      s.mapSize.set(size, size);
     }
     if (this._shadowTarget) {
       this.sun.target.position.copy(this._shadowTarget);

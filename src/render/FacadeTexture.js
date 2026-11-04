@@ -116,12 +116,42 @@ export function createFacadeTexture(variant = 'residential') {
       ctx.fillStyle = 'rgba(50,45,38,0.08)'; ctx.fillRect(x + 20 + rng.next() * 20, y + 26, 6, 34);
     }
 
+    // Milestone 5: weathering pass — monsoon seepage below openings, mould blooms,
+    // repainted plaster patches. Every wall reads as lived-in, not freshly generated.
+    const weather = rng.next();
+    if (weather < 0.32) {
+      // rain seepage: a dark smear under the window that widens as it runs down
+      const sx = wx + 2 + rng.next() * (ww - 12);
+      ctx.fillStyle = 'rgba(52,48,42,0.10)';
+      ctx.fillRect(sx + rng.next() * 8 - 4, y + 44, 10 + rng.next() * 8, 20);
+      ctx.fillStyle = 'rgba(52,48,42,0.16)';
+      ctx.fillRect(sx, y + 50, 5 + rng.next() * 5, 14);
+    } else if (weather < 0.45) {
+      // mould bloom hugging a corner (green-grey, translucent)
+      ctx.fillStyle = 'rgba(98,106,86,0.14)';
+      const mx = rng.next() < 0.5 ? x + 3 : x + cell - 19;
+      ctx.beginPath();
+      ctx.ellipse(mx + 8, y + 10 + rng.next() * 42, 8 + rng.next() * 8, 6 + rng.next() * 6, rng.next() * 3, 0, 7);
+      ctx.fill();
+    } else if (weather < 0.58) {
+      // repainted plaster patch: a brighter, sharper rectangle
+      ctx.fillStyle = 'rgba(255,255,250,0.22)';
+      ctx.fillRect(x + 4 + rng.next() * 18, y + 3 + rng.next() * 10, 18 + rng.next() * 16, 14 + rng.next() * 12);
+    } else if (weather < 0.66) {
+      // old poster glue ghost with torn edges
+      ctx.fillStyle = 'rgba(232,228,214,0.35)';
+      const gx = x + 10 + rng.next() * 30, gy = y + 8 + rng.next() * 14;
+      ctx.fillRect(gx, gy, 16 + rng.next() * 10, 18 + rng.next() * 10);
+      ctx.fillStyle = 'rgba(180,170,150,0.30)';
+      ctx.fillRect(gx + rng.next() * 8, gy + 24, 6, 4);
+    }
+
     // floor slab shadow along the bottom edge of every cell
     ctx.fillStyle = 'rgba(60,50,40,0.20)';
     ctx.fillRect(x, y + cell - 5, cell, 5);
 
-    // occasional grime streak running down from the slab
-    if (rng.chance(0.12)) {
+    // grime streaks running down from the slab (M5: more frequent, two weights)
+    if (rng.chance(0.22)) {
       ctx.fillStyle = 'rgba(45,40,34,0.10)';
       ctx.fillRect(x + 6 + rng.next() * 44, y + cell - 5, 4, 0);   // (kept inside cell; streaks read at slab joints)
       ctx.fillRect(x + 6 + rng.next() * 44, y + cell - 24, 3, 19);

@@ -129,7 +129,16 @@ export function validateRoute(data) {
     if (d === undefined) return;
     if (typeof d !== 'object' || Array.isArray(d)) { err(`segment "${seg.id}": dressing must be an object`); return; }
     for (const [k, v] of Object.entries(d)) {
-      if (!Number.isFinite(v) || v < 0 || v > 2) err(`segment "${seg.id}": dressing.${k} must be a number between 0 and 2`);
+      // Milestone 5: trees/stains-style 0..2 densities, plus busStops (s list) and
+      // kerbParking (bool) — the fields that drive ChunkBuilder, ParkedVehicles and
+      // TrafficSystem's kerb-lane exclusion.
+      if (k === 'busStops') {
+        if (!Array.isArray(v) || !v.every((n) => Number.isFinite(n) && n >= 0)) err(`segment "${seg.id}": dressing.busStops must be an array of s positions`);
+      } else if (k === 'kerbParking') {
+        if (typeof v !== 'boolean') err(`segment "${seg.id}": dressing.kerbParking must be a boolean`);
+      } else {
+        if (!Number.isFinite(v) || v < 0 || v > 2) err(`segment "${seg.id}": dressing.${k} must be a number between 0 and 2`);
+      }
     }
   });
 

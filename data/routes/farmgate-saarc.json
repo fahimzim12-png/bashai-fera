@@ -6,7 +6,7 @@
     "en": "Farmgate → Karwan Bazar → SAARC Fountain"
   },
   "status": "geo-referenced",
-  "statusNote": "Milestone 4: the centreline is fitted to real OpenStreetMap geometry of Kazi Nazrul Islam Avenue (extracted 2026-11-04, see docs/route-research/). Junction list, landmark placement and sides follow the measured corridor. Building heights remain interpretive.",
+  "statusNote": "Milestone 5: real OpenStreetMap corridor (extracted 2026-11-04, see docs/route-research/) now dressed as four distinct districts — Farmgate junction commerce, the tree-lined Kazi Nazrul Islam Avenue, the Karwan Bazar wholesale-market sprawl with kerb-parked staff buses, and the SAARC Fountain tower approach. dressing.trees / busStops / kerbParking drive ChunkBuilder, TrafficSystem and ParkedVehicles. Building heights remain interpretive.",
   "declaredLengthMeters": 1250,
   "start": {
     "lateral": -14.4
@@ -484,7 +484,7 @@
         "width": [8, 15],
         "depth": [14, 24],
         "gapChance": 0.05,
-        "archetypes": { "midrise": 0.5, "commercial": 0.32, "institutional": 0.08, "halfbuilt": 0.1 }
+        "archetypes": { "midrise": 0.48, "commercial": 0.3, "institutional": 0.07, "halfbuilt": 0.1, "tower": 0.05 }
       },
       "dressing": {
         "cables": 1.6,
@@ -492,7 +492,9 @@
         "stalls": 0.8,
         "stains": 0.12,
         "crowd": 1.25,
-        "cloth": 0.7
+        "cloth": 0.7,
+        "trees": 0.35,
+        "busStops": [30]
       }
     },
     {
@@ -509,7 +511,7 @@
         "width": [8, 16],
         "depth": [14, 24],
         "gapChance": 0.08,
-        "archetypes": { "midrise": 0.42, "commercial": 0.34, "institutional": 0.12, "halfbuilt": 0.12 }
+        "archetypes": { "midrise": 0.36, "commercial": 0.32, "institutional": 0.12, "halfbuilt": 0.12, "tower": 0.08 }
       },
       "dressing": {
         "cables": 1.0,
@@ -517,7 +519,9 @@
         "stalls": 0.35,
         "stains": 0.08,
         "crowd": 0.85,
-        "cloth": 0.35
+        "cloth": 0.35,
+        "trees": 0.75,
+        "busStops": [700]
       }
     },
     {
@@ -542,7 +546,10 @@
         "stalls": 0.95,
         "stains": 0.85,
         "crowd": 1.4,
-        "cloth": 1.35
+        "cloth": 1.35,
+        "trees": 0.12,
+        "busStops": [945],
+        "kerbParking": true
       }
     },
     {
@@ -559,7 +566,7 @@
         "width": [10, 18],
         "depth": [16, 26],
         "gapChance": 0.04,
-        "archetypes": { "commercial": 0.5, "midrise": 0.22, "institutional": 0.08, "halfbuilt": 0.2 }
+        "archetypes": { "tower": 0.3, "commercial": 0.3, "midrise": 0.22, "institutional": 0.08, "halfbuilt": 0.1 }
       },
       "dressing": {
         "cables": 0.7,
@@ -567,7 +574,9 @@
         "stalls": 0.1,
         "stains": 0.05,
         "crowd": 0.65,
-        "cloth": 0.2
+        "cloth": 0.2,
+        "trees": 0.5,
+        "busStops": [1230]
       }
     }
   ],

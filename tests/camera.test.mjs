@@ -22,11 +22,11 @@ test('camera: springs settle behind the walker without overshooting forever', ()
   let lastDist = 1e9;
   for (let i = 0; i < 240; i++) {
     rig.update(p, 1 / 60, { steer: 0 });
-    const d = Math.abs(rig.sCam - (p.s - 4.6));
+    const d = Math.abs(rig.sCam - (p.s - rig.cfg.distance));   // M5: distance is config-driven
     assert.ok(d <= lastDist + 0.35, 'spring converges monotonically enough');
     lastDist = d;
   }
-  assert.ok(lastDist < 0.6, 'camera settles ~4.6 m behind: ' + lastDist.toFixed(3));
+  assert.ok(lastDist < 0.6, 'camera settles ~' + rig.cfg.distance + ' m behind: ' + lastDist.toFixed(3));
 });
 
 test('camera: handheld sway stays subtle and never diverges', () => {

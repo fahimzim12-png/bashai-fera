@@ -34,6 +34,12 @@ export class CrowdSystem {
 
     // ---- deterministic population layout ----
     const rng = new Rng(`${route.id}:crowd`);
+    // Milestone 5: zebra crossings (footbridge + fountain approach) and bus shelters
+    // anchor the new behaviours: people cross the road, people queue for the bus.
+    const crossS = (route.landmarks || []).filter((lm) => lm.kind === 'farmgate-footbridge').map((lm) => lm.s);
+    crossS.push(route.length - 12);
+    const busStopS = [];
+    for (const seg of route.segments) for (const st of (seg.dressing || {}).busStops || []) busStopS.push(st);
     this.people = [];
     let id = 0;
     for (let s = route.space.minS + 6; s < route.space.maxS - 6; s += 4 + rng.next() * 3.5) {
@@ -62,7 +68,24 @@ export class CrowdSystem {
         if (!side) continue;
         person.lat = side[0] + rng.next() * (side[1] - side[0]);
         person.scale = rng.next() < 0.1 ? 0.72 + rng.next() * 0.1 : 0.92 + rng.next() * 0.14;   // some kids
-      } else if (roll < 0.62) {
+      } else if (crossS.some((cs) => Math.abs(s - cs) < 5.5) && rng.next() < 0.75) {
+        // Milestone 5: zebra crosser — walks straight across the road at the crossing,
+        // respawnless: they turn around at the far kerb and cross back (continuous flow).
+        person.behavior = 'cross';
+        person.crossDir = rng.next() < 0.5 ? 1 : -1;
+        person.lat = person.crossDir > 0 ? -13.4 : 13.4;
+        person.speed = 0.95 + rng.next() * 0.5;
+        person.scale = 0.92 + rng.next() * 0.14;
+      } else if (roll < 0.58 && busStopS.some((st) => Math.abs(st - s) < 4.5)) {
+        // Milestone 5: bus queue — waiting under the shelter, facing the road
+        person.behavior = 'queue';
+        const fp = route.profileAt(s).elements.filter((e) => e.kind === 'footpath');
+        const left = fp[0];
+        if (!left) continue;
+        person.lat = left.x0 + 1.9 + rng.next() * 0.8;
+        person.yaw = Math.PI;                               // facing the road (-lat)
+        person.scale = 0.92 + rng.next() * 0.14;
+      } else if (roll < 0.74) {
         // stander: watching the street, inner edge of a footpath
         person.behavior = 'stand';
         const bounds = footpathBoundsAt(route, s);
@@ -86,7 +109,7 @@ export class CrowdSystem {
           variant: rng.next() < 0.5 ? 'headB' : 'headA', scale: 0.92 + rng.next() * 0.14 };
         this._dress(twin, prng);
         this.people.push(twin);
-      } else if (roll < 0.9 && stalls.length) {
+      } else if (roll < 0.88 && stalls.length) {
         // sitter at a tea stall / umbrella cart bench
         const st = stalls[rng.int(0, stalls.length - 1)];
         person.behavior = st.kind === 'tea' ? 'sitBench' : 'sitStool';
@@ -158,11 +181,19 @@ export class CrowdSystem {
     const winLo = playerS - 70, winHi = playerS + this.viewDist + 25;
 
     for (const p of this.people) {
-      if (p.behavior !== 'walk' || !p.slot) continue;
-      p.s += p.dir * p.speed * dt;
-      p.phase += p.speed * STRIDE_RATE * dt;
-      if (p.s > winHi) p.s = winLo + 4 + (p.id % 7);
-      if (p.s < winLo) p.s = winHi - 4 - (p.id % 7);
+      if (p.behavior === 'walk' && p.slot) {
+        p.s += p.dir * p.speed * dt;
+        p.phase += p.speed * STRIDE_RATE * dt;
+        if (p.s > winHi) p.s = winLo + 4 + (p.id % 7);
+        if (p.s < winLo) p.s = winHi - 4 - (p.id % 7);
+      } else if (p.behavior === 'cross' && p.slot) {
+        // Milestone 5: crossing the road; turn around at the far kerb and cross back
+        p.lat += p.crossDir * p.speed * dt;
+        p.phase += p.speed * STRIDE_RATE * dt;
+        const lim = 13.4;
+        if (p.lat >= lim) { p.lat = lim; p.crossDir = -1; }
+        else if (p.lat <= -lim) { p.lat = -lim; p.crossDir = 1; }
+      }
     }
 
     // ---- slot assignment: keep the nearest people on screen ----
@@ -209,7 +240,14 @@ export class CrowdSystem {
           pose.elbowL = pose.elbowR = -0.35;
           pose.torsoPitch += 0.04;
         }
-      } else if (p.behavior === 'stand' || p.behavior === 'talk' || p.behavior === 'vendor') {
+      } else if (p.behavior === 'cross') {
+        // Milestone 5: brisk walk straight across the carriageway
+        const w = walkPose(p.phase, 0.95);
+        blendPose(pose, this._blank, w, 1);
+        pose.bobY = w.bobY;
+        pose.elbowL = w.elbowL; pose.elbowR = w.elbowR;
+        yaw = heading - p.crossDir * (Math.PI / 2);        // face across the road
+      } else if (p.behavior === 'stand' || p.behavior === 'talk' || p.behavior === 'vendor' || p.behavior === 'queue') {
         const idle = idlePose(this.time, (p.id * 0.618) % 1);
         blendPose(pose, this._blank, idle, 1);
         yaw = heading + p.yaw;

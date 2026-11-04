@@ -1,8 +1,10 @@
 // Contact "blob" shadows (Milestone 4): a soft dark decal under every vehicle, pedestrian
-// and the hero. This is what grounds objects on the Redmi 9 - it costs a handful of
-// instanced draw calls and no shadow-map work. The real directional shadow map only
-// switches on for the high tier (see Environment.setShadows).
-import * as THREE from 'three';
+// and the hero. This grounds objects on tiers without the shadow map (and parked vehicles
+// in M5). The real directional shadow map only switches on for capable tiers
+// (see Environment.setShadows).
+// NOTE: vendored three by RELATIVE path (identical file to the 'three' import map entry)
+// so classes using blobs stay unit-testable in plain Node (see CameraRig, M4).
+import * as THREE from '../../vendor/three/three.module.js';
 
 let _texture = null;
 

@@ -17,6 +17,7 @@ import { TrafficSystem } from '../city/TrafficSystem.js';
 import { TrafficRenderer } from '../city/TrafficRenderer.js';
 import { CrowdSystem } from '../city/CrowdSystem.js';
 import { CrowdRenderer } from '../city/CrowdRenderer.js';
+import { ParkedVehicles } from '../city/ParkedVehicles.js';
 import { PlayerController } from '../player/PlayerController.js';
 import { PlayerAvatar } from '../player/PlayerAvatar.js';
 import { CameraRig } from '../camera/CameraRig.js';
@@ -81,6 +82,8 @@ export class Game {
       onLost: () => this._onContextLost(),
       onRestored: () => this._onContextRestored(),
     });
+    // M5: the route owns its exposure (warm afternoon default), the renderer owns tone mapping.
+    this.renderer.toneMappingExposure = this.route.lighting.exposure || 1.12;
     this.quality = new QualityManager({
       renderer: this.renderer, profile: this.profile, forcedTier: forced,
       adaptive: this.params.adapt !== '0', onChange: () => this._applyTier(),
@@ -105,6 +108,9 @@ export class Game {
     this.traffic.attach(new TrafficRenderer({ scene: this.scene, material: groundMat, system: this.traffic }));
     this.crowd = new CrowdSystem({ route: this.route, bus: this.bus });
     this.crowd.attach(new CrowdRenderer({ scene: this.scene, material: groundMat, system: this.crowd }));
+    // Milestone 5: the parked city — staff buses, vans, cars, CNGs and rickshaws along
+    // the kerbs of the parking districts. Static instanced meshes, distance-culled.
+    this.parked = new ParkedVehicles({ scene: this.scene, route: this.route, material: groundMat });
     if (this.params.audio !== '0') this.audio = new AudioEngine(this.bus);
     this.avatar = new PlayerAvatar(groundMat);
     this.scene.add(this.avatar.root);
@@ -243,7 +249,7 @@ export class Game {
     const t = this.quality.tier;
     this.chunks.aheadChunks = t.aheadChunks;
     this.env.setViewDistance(t.aheadChunks * CONFIG.world.chunkLength - 20);
-    this.env.setShadows(t.shadows);
+    this.env.setShadows(t.shadows, t.shadowSize);
     if (this.traffic) this.traffic.setTier(t);
     if (this.crowd) this.crowd.setTier(t);
     this.dirty = true;
@@ -285,6 +291,7 @@ export class Game {
     this.avatarBlob.position.set(this._w.x, 0.025, this._w.z);
     if (active) this.chunks.update(p.s);
     this.landmarks.update(p.s);
+    if (this.parked) this.parked.update(p.s, 340);
     if (active) this.traffic.update(p.s, p.x, dt);
     this.crowd.update(p.s, active ? dt : 0);
     if (this.audio && active) this.audio.update(p.s, route.length, this.crowd.stats.visible / this.crowd.capacity, dt);
@@ -316,6 +323,7 @@ export class Game {
       chunks: this.chunks.loadedCount, buildLast: this.chunks.stats.lastBuildMs, buildMax: this.chunks.stats.maxBuildMs,
       landmarks: this.landmarks.entries.length, landmarksVis: this.landmarks.visibleCount, landmarkTris: this.landmarks.stats.triangles,
       crowdVis: this.crowd.stats.visible, crowdPop: this.crowd.people.length,
+      parked: this.parked.count,
       traffic: this.traffic.stats.active, nearMisses: this.traffic.stats.nearMisses,
       audio: this.audio ? (this.audio.ctx ? 'on' : 'idle') : 'off',
       s: p.s, x: p.x, segment: this.route.segmentAt(p.s).name.en,

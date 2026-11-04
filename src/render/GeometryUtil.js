@@ -1,5 +1,7 @@
 // Bridge from our plain geometry arrays to Three.js BufferGeometry.
-import * as THREE from 'three';
+// NOTE: vendored three by RELATIVE path (identical file to the 'three' import map entry)
+// so geometry-building classes stay unit-testable in plain Node (see CameraRig, M4).
+import * as THREE from '../../vendor/three/three.module.js';
 
 export function toBufferGeometry(data) {
   const g = new THREE.BufferGeometry();

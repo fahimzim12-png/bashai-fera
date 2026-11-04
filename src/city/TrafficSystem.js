@@ -66,6 +66,19 @@ export class TrafficSystem {
       return { L, R };
     });
 
+    // Milestone 5: kerb-parking districts hand their OUTER (kerb-side) lane to parked
+    // vehicles — moving traffic keeps the inner lanes, exactly like the real corridor
+    // where staff buses and market vans line the carriageway.
+    this.busStops = [];
+    route.segments.forEach((seg, i) => {
+      const dr = seg.dressing || {};
+      for (const s of dr.busStops || []) if (Number.isFinite(s)) this.busStops.push({ s, seg: i });
+      if (dr.kerbParking) {
+        if (this.laneSets[i].L.length > 1) this.laneSets[i].L.shift();
+        if (this.laneSets[i].R.length > 1) this.laneSets[i].R.pop();
+      }
+    });
+
     // ---- fleet plan: per-type instance counts (one draw call per type) ----
     const weights = {};
     for (const t of VEHICLE_TYPES) weights[t] = VEHICLE_SPECS[t].weight;
@@ -80,12 +93,14 @@ export class TrafficSystem {
       const spec = VEHICLE_SPECS[type];
       const carr = i % 2 === 0 ? -1 : 1;                 // alternate carriageways
       const laneIdx = Math.floor(i / 2) % 3;
+      // Milestone 5: lane personality — kerb lanes crawl (pick-ups, drops), median lanes flow
+      const laneFactor = laneIdx === 0 ? 0.9 : laneIdx === 2 ? 1.08 : 1.0;
       return {
         type, instIdx: i, colourIdx: rng.int(0, 15), carr, laneIdx,
         s: 0, lat: 0, speed: 0,
-        desired: rng.range(spec.speed[0], spec.speed[1]),
+        desired: rng.range(spec.speed[0], spec.speed[1]) * laneFactor,
         len: spec.len, wid: spec.wid,
-        hornT: rng.range(2, 20), nearMissT: 0, _active: false,
+        hornT: rng.range(2, 20), nearMissT: 0, dwellT: 0, lastStop: -1, _active: false,
       };
     });
     this.byType = {};
@@ -126,6 +141,7 @@ export class TrafficSystem {
       l.v.s = Math.min(l.s, maxS);
       l.v.lat = this._laneLat(l.v, l.v.s);
       l.v.speed = l.v.desired * 0.7;
+      l.v.lastStop = -1; l.v.dwellT = 0;
     }
   }
 
@@ -178,6 +194,15 @@ export class TrafficSystem {
       if (gap < minGap + 14) target = Math.min(target, leaderSpeed * clamp((gap - minGap * 0.6) / 8, 0.15, 1));
       if (gap < minGap * 0.55) target = 0.4;               // crawl, Dhaka style, never reverse
 
+      // ---- Milestone 5: buses actually stop at the bus shelters --------------------------
+      if (v.type === 'bus' && v.carr < 0 && v.laneIdx === 0) {
+        for (const st of this.busStops) {
+          if (v.lastStop === st.s) continue;
+          if (v.s >= st.s - 2.6 && v.s <= st.s + 0.8) { v.lastStop = st.s; v.dwellT = 3.0 + (v.instIdx % 3) * 0.8; }
+        }
+        if (v.dwellT > 0) { v.dwellT -= dt; target = 0; }   // boarding: full stop, then pull away
+      }
+
       // ---- the walking player is an obstacle too (no collision yet: slow + honk) ----
       if (v.carr < 0 && Math.abs(v.lat - playerLat) < 1.6 && dir * (playerS - v.s) > 0
         && dir * (playerS - v.s) < 14) {
@@ -223,6 +248,7 @@ export class TrafficSystem {
         if (!placed) v.s = clamp(atHi ? winHi + 70 : winLo - 70,
           route.space.minS + 8, route.space.maxS - 8);
         v.speed = v.desired * 0.6;
+        v.lastStop = -1;                                    // recycled: may stop at shelters again
       }
 
       // ---- near-miss detection (vehicles passing the walker) ----
