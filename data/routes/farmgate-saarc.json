@@ -87,26 +87,29 @@
   "palettes": {
     "midrise_mixed": {
       "walls": [
-        "#d8ccaf",
-        "#b5a28c",
-        "#c9c2b4",
-        "#a8b3b8",
-        "#c7a89a",
-        "#b9c4ad",
-        "#cfd0c8",
-        "#d8c6a5",
-        "#c2917b"
+        "#f0e0bc",
+        "#e2c9a2",
+        "#e2ae9e",
+        "#d9a8b0",
+        "#9fc2d8",
+        "#a8c8a8",
+        "#ecd68e",
+        "#c9835e",
+        "#f2efe4",
+        "#a0624a"
       ],
       "roofs": [
         "#8f8a82",
-        "#7d7a74",
-        "#9a8f84"
+        "#a8624a",
+        "#9aa0a4",
+        "#7d7a74"
       ],
       "shutters": [
-        "#4a4540",
-        "#5a5149",
-        "#3f4a52",
-        "#6a3b36"
+        "#2e7d6e",
+        "#b03a30",
+        "#3a6ea8",
+        "#4a7d3a",
+        "#4a4540"
       ],
       "awnings": [
         "#e4472f",
@@ -127,23 +130,24 @@
     },
     "market_low": {
       "walls": [
-        "#d8c6a5",
-        "#c2917b",
-        "#cfd0c8",
-        "#b7bf9f",
-        "#c9b8a0",
-        "#e0b79a"
+        "#e0c070",
+        "#7a9eb8",
+        "#8fae7a",
+        "#d99070",
+        "#aab2b6",
+        "#e8d8b0",
+        "#c9835e"
       ],
       "roofs": [
         "#7d7a74",
-        "#6f6b66",
+        "#9aa0a4",
         "#8a8077"
       ],
       "shutters": [
-        "#3f4a52",
-        "#5a5149",
-        "#2f6b5e",
-        "#6a3b36"
+        "#3a6ea8",
+        "#b03a30",
+        "#2e7d6e",
+        "#4a4540"
       ],
       "awnings": [
         "#e4472f",
@@ -165,19 +169,19 @@
     },
     "towers_mixed": {
       "walls": [
-        "#a8b3b8",
-        "#9fa7ad",
-        "#cfd0c8",
-        "#b5a28c",
-        "#8fa1ad",
-        "#c9b8a0"
+        "#8fb4c8",
+        "#d8c8a8",
+        "#eceae2",
+        "#a8b8c2",
+        "#7aa3a8",
+        "#b8ab98"
       ],
       "roofs": [
         "#7d7a74",
-        "#6c7075"
+        "#9aa0a4"
       ],
       "shutters": [
-        "#3f4a52",
+        "#3a6ea8",
         "#4a4540",
         "#2f3a44"
       ],
@@ -198,24 +202,24 @@
   "moods": {
     "note": "Per-district atmosphere deltas applied on top of the global lighting. fog/hemiGround are colours, density scales fog distance (higher = thicker air). Blended across segment boundaries.",
     "farmgate": {
-      "fog": "#e3cdb0",
-      "hemiGround": "#8f8272",
-      "density": 1.0
+      "fog": "#ecd2a8",
+      "hemiGround": "#a08a6a",
+      "density": 0.9
     },
     "avenue-corridor": {
-      "fog": "#e0c9ac",
-      "hemiGround": "#908371",
-      "density": 1.04
+      "fog": "#eed8b0",
+      "hemiGround": "#a28c6c",
+      "density": 0.92
     },
     "karwan-bazar": {
-      "fog": "#d9c4a4",
-      "hemiGround": "#95856d",
-      "density": 1.18
+      "fog": "#e6cc9e",
+      "hemiGround": "#a68d68",
+      "density": 1.0
     },
     "saarc-approach": {
-      "fog": "#e8d4b4",
-      "hemiGround": "#91847a",
-      "density": 0.9
+      "fog": "#f2dcb2",
+      "hemiGround": "#a28c74",
+      "density": 0.78
     }
   },
   "sections": {
@@ -488,12 +492,12 @@
       },
       "dressing": {
         "cables": 1.6,
-        "billboards": 0.5,
-        "stalls": 0.8,
-        "stains": 0.12,
+        "billboards": 0.65,
+        "stalls": 0.85,
+        "stains": 0.14,
         "crowd": 1.25,
         "cloth": 0.7,
-        "trees": 0.35,
+        "trees": 0.4,
         "busStops": [30]
       }
     },
@@ -542,8 +546,8 @@
       },
       "dressing": {
         "cables": 1.2,
-        "billboards": 0.12,
-        "stalls": 0.95,
+        "billboards": 0.25,
+        "stalls": 1.0,
         "stains": 0.85,
         "crowd": 1.4,
         "cloth": 1.35,
@@ -717,16 +721,16 @@
     }
   ],
   "lighting": {
-    "note": "Late dry-season afternoon: hazy Dhaka light, the father promised to be home before evening. Palette follows the M4 photo research (dust-haze sky, warm sun, desaturated ground).",
-    "skyTop": "#8fb0c8",
-    "skyHorizon": "#e8d2ae",
-    "fog": "#e3cdb0",
-    "sunColor": "#ffe3b8",
+    "note": "Late-afternoon golden Dhaka (M5 photo regrade): saturated azure-to-cream sky, strong warm sun with a cool sky bounce, dust-gold haze that stays transparent enough to show the skyline. Palette derived from the 41-photo reference board (docs/route-research/photo-analysis).",
+    "skyTop": "#5e93c6",
+    "skyHorizon": "#f5d9a4",
+    "fog": "#ecd2a8",
+    "sunColor": "#ffdf9e",
     "sunDir": [-0.45, 0.5, 0.35],
-    "sunIntensity": 2.2,
-    "hemiSky": "#c2d3e2",
-    "hemiGround": "#8f8272",
-    "hemiIntensity": 1.5,
-    "exposure": 1.12
+    "sunIntensity": 2.9,
+    "hemiSky": "#bdd6ea",
+    "hemiGround": "#a08a6a",
+    "hemiIntensity": 1.35,
+    "exposure": 1.18
   }
 }

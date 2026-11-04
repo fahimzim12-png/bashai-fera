@@ -3,12 +3,13 @@
 // InstancedMeshes by CrowdRenderer. Part geometry origins sit at the JOINT that moves
 // them, limbs hang down -Y, and the model faces +Z, matching the hero's conventions.
 //
-// The whole crowd renders in 8 draw calls: head(2 variants), torso, and 4 limb pairs,
-// each one InstancedMesh. Per-instance colour (shirt/trousers/skin) gives variety for
-// free; hair is baked near-black so skin tinting reads as dark hair on every tone.
+// The crowd renders in 9 draw calls: head(2 variants), torso, 4 limb pairs and the WRAP
+// skirt (lungi / sari / salwar kameez - hidden for trouser wearers). Per-instance colour
+// (shirt/trousers/skin/wrap) gives variety for free; hair is baked near-black so skin
+// tinting reads as dark hair on every tone.
 import { GeometryBuilder } from '../render/GeometryBuilder.js';
 
-export const CROWD_PARTS = ['headA', 'headB', 'torso', 'upperArm', 'lowerArm', 'upperLeg', 'lowerLeg'];
+export const CROWD_PARTS = ['headA', 'headB', 'torso', 'upperArm', 'lowerArm', 'upperLeg', 'lowerLeg', 'skirt'];
 
 /** Joint positions in person-local space (feet at y=0, facing +Z). */
 export const CROWD_JOINTS = {
@@ -20,11 +21,15 @@ export const CROWD_JOINTS = {
 };
 
 // Everyday Dhaka clothing (no brands): office shirts, panjabis, tees, lungi, sari colours.
+// M5 concept regrade: brighter shirts + the lungi check colours (indigo/red/green/purple
+// families) and saturated sari/kameez tones seen in the reference frames.
 export const CROWD_PALETTES = {
-  shirts: ['#e8e4da', '#8fb4d4', '#c9d8b8', '#d4b896', '#7d8a99', '#f2d8b8', '#b85c4a', '#5c7d6b', '#d8d4c8', '#a8b8c4'],
+  shirts: ['#e8e4da', '#8fb4d4', '#c9d8b8', '#d4b896', '#7d8a99', '#f2d8b8', '#b85c4a', '#5c7d6b', '#d8d4c8', '#a8b8c4', '#d97e2f', '#7d3ac1', '#c23b5a'],
   pants: ['#39404e', '#4a4238', '#6b6459', '#2c2c30', '#8a8272', '#3a5c8c', '#5c5448'],
   skins: ['#a87550', '#96683f', '#b8845c', '#8a5c38', '#c49a70'],
-  sari: ['#c23b5a', '#d4692e', '#3a8c5c', '#7d3ac1', '#c9a23a', '#b03a68', '#2e7dab'],
+  sari: ['#c23b5a', '#d4692e', '#3a8c5c', '#7d3ac1', '#c9a23a', '#b03a68', '#2e7dab', '#d43a8c', '#2e9e8c'],
+  kameez: ['#d4692e', '#2e9e8c', '#c23b7a', '#e0b23a', '#7d3ac1', '#c9403a', '#3a8c5c'],
+  lungi: ['#2c4a7c', '#7c2c3a', '#2e7d4f', '#5c3a8c', '#3a6e6e', '#8c5a2c'],
 };
 
 const HAIR = '#1c1510', SHOE = '#26221e';
@@ -67,10 +72,29 @@ function buildLowerLeg(g) {
   g.box([0, -0.395, 0.035], [0, 1], [-1, 0], 0.19, 0.075, 0.26, SHOE);     // shoe
 }
 
+/** Wrap skirt (lungi / sari / salwar-kameez skirt), hung from the hip joint.
+ *  Baked as 4 stacked flare bands alternating bright/dark - the instance tint then
+ *  produces the classic lungi two-tone stripe (and plain saris just tint brighter).
+ *  Per-outfit length/flare comes from the instance matrix scale (CrowdRenderer). */
+function buildSkirt(g) {
+  const BANDS = 4, TOP = 0.17, HEM = 0.26, LEN = 0.78;
+  for (let b = 0; b < BANDS; b++) {
+    const y0 = -0.02 - (b / BANDS) * LEN, y1 = -0.02 - ((b + 1) / BANDS) * LEN;
+    const w0 = TOP + (HEM - TOP) * (b / BANDS), w1 = TOP + (HEM - TOP) * ((b + 1) / BANDS);
+    const col = b % 2 ? '#7a7a7a' : '#f6f6f6';
+    // frustum ring: four slightly sloped quads
+    g.quad([-w0, y0, -w0], [w0, y0, -w0], [w1, y1, -w1], [-w1, y1, -w1], col, { hint: [0, 0, -1] });
+    g.quad([w0, y0, w0], [-w0, y0, w0], [-w1, y1, w1], [w1, y1, w1], col, { hint: [0, 0, 1] });
+    g.quad([-w0, y0, w0], [-w0, y0, -w0], [-w1, y1, -w1], [-w1, y1, w1], col, { hint: [-1, 0, 0] });
+    g.quad([w0, y0, -w0], [w0, y0, w0], [w1, y1, w1], [w1, y1, -w1], col, { hint: [1, 0, 0] });
+  }
+}
+
 /** Build all crowd part geometries once. Returns { part: geometryData }. */
 export function buildCrowdGeometries() {
   const builders = { headA: buildHeadA, headB: buildHeadB, torso: buildTorso,
-    upperArm: buildUpperArm, lowerArm: buildLowerArm, upperLeg: buildUpperLeg, lowerLeg: buildLowerLeg };
+    upperArm: buildUpperArm, lowerArm: buildLowerArm, upperLeg: buildUpperLeg, lowerLeg: buildLowerLeg,
+    skirt: buildSkirt };
   const out = {};
   for (const part of CROWD_PARTS) {
     const g = new GeometryBuilder();

@@ -28,8 +28,10 @@ export function createRenderer(canvas, { antialias, onLost, onRestored }) {
   renderer.setClearColor(0xe8c9a2, 1);
   // Milestone 4: filmic tone mapping grounds the whole Dhaka palette (no more raw sRGB
   // blowout on sunlit concrete) and the output colour space is pinned explicitly.
+  // M5 regrade: default exposure lifted to 1.18 (the route's lighting block owns the
+  // final value; this keeps the fallback consistent).
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.18;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   // Shadow MAP support is always on; the light's castShadow flag (per quality tier) decides
   // whether any shadow pass actually runs. Keeping this constant avoids material recompiles.

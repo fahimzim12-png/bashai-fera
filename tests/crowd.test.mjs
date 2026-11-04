@@ -17,7 +17,7 @@ function makeCrowd() {
 }
 
 test('character kit: parts, joints and palettes are complete and sane', () => {
-  assert.equal(CROWD_PARTS.length, 7);
+  assert.equal(CROWD_PARTS.length, 8);   // head x2, torso, 4 limbs, wrap skirt (lungi/sari/kameez)
   const geos = buildCrowdGeometries();
   for (const part of CROWD_PARTS) {
     assert.ok(geos[part].vertexCount > 20, `${part} geometry`);
@@ -27,7 +27,7 @@ test('character kit: parts, joints and palettes are complete and sane', () => {
     const j = CROWD_JOINTS[key];
     assert.ok(j.every(Number.isFinite) && j[1] > 0, `joint ${key}`);
   }
-  for (const pal of ['shirts', 'pants', 'skins', 'sari']) {
+  for (const pal of ['shirts', 'pants', 'skins', 'sari', 'kameez', 'lungi']) {
     assert.ok(CROWD_PALETTES[pal].length >= 5, `palette ${pal}`);
     for (const c of CROWD_PALETTES[pal]) assert.match(c, /^#[0-9a-f]{6}$/i);
   }

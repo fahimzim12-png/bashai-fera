@@ -13,41 +13,43 @@ import * as THREE from 'three';
 import { smoothstep } from '../core/MathUtil.js';
 import { Rng } from '../core/Rng.js';
 
-/** Paints the daytime sky: gradient + cumulus banks + haze. Returns a CanvasTexture. */
+/** Paints the daytime sky: gradient + cumulus banks + haze. Returns a CanvasTexture.
+ * M5 photo regrade: saturated azure overhead melting into golden dust — the sky the
+ * 41-photo reference board actually shows (deep #4e86bd zenith, cream #f5d9a4 horizon),
+ * sun-warmed cloud tops instead of grey cotton. */
 export function paintSky({ skyTop, skyHorizon, seed = 'sky-m5' } = {}) {
   const W = 1024, H = 512;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
   const rng = new Rng(seed);
-  const top = skyTop || '#7fa3c4', hor = skyHorizon || '#e8d2ae';
+  const top = skyTop || '#5e93c6', hor = skyHorizon || '#f5d9a4';
 
-  // vertical gradient: deep blue overhead -> warm haze AT the horizon (canvas y 0.5 = dome
-  // equator = what a ground camera sees as the horizon line; below it stays warm)
+  // vertical gradient: saturated azure overhead -> pale blue -> warm gold AT the horizon
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, top);
-  g.addColorStop(0.3, '#a9c1d6');
-  g.addColorStop(0.44, '#d6cbb2');
+  g.addColorStop(0.26, '#6fa6cf');
+  g.addColorStop(0.4, '#a9c4d2');
+  g.addColorStop(0.47, '#e8cf9e');
   g.addColorStop(0.5, hor);
   g.addColorStop(1, hor);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
-  // distant haze band hovering just above the horizon line
+  // distant haze band hovering just above the horizon line (golden dust, Dhaka dry season)
   const hz = ctx.createLinearGradient(0, H * 0.40, 0, H * 0.52);
-  hz.addColorStop(0, 'rgba(255,244,224,0)');
-  hz.addColorStop(0.6, 'rgba(255,244,224,0.34)');
-  hz.addColorStop(1, 'rgba(255,244,224,0)');
+  hz.addColorStop(0, 'rgba(255,236,200,0)');
+  hz.addColorStop(0.6, 'rgba(255,236,200,0.42)');
+  hz.addColorStop(1, 'rgba(255,236,200,0)');
   ctx.fillStyle = hz;
   ctx.fillRect(0, H * 0.40, W, H * 0.12);
 
   // cumulus banks: clusters of soft ellipses riding ABOVE the horizon (v > 0.5 = sky),
-  // wrapped at the u seam. Canvas y 0.30..0.46H maps to elevations of roughly 2-20 degrees
-  // on the dome — where a ground-level camera actually sees sky.
+  // wrapped at the u seam. Cream-white tops, warm-grey bellies (sun-lit, not overcast).
   const cloud = (cx, cy, s, alpha) => {
     for (const ox of [0, -W, W]) {                       // draw thrice: seamless wrap
       const x0 = cx + ox;
-      ctx.fillStyle = `rgba(255,253,248,${alpha})`;
+      ctx.fillStyle = `rgba(255,251,240,${alpha})`;
       for (let b = 0; b < 5; b++) {
         const bx = x0 + (b - 2) * 26 * s + (rng.next() - 0.5) * 14 * s;
         const by = cy + (rng.next() - 0.5) * 8 * s;
@@ -56,7 +58,7 @@ export function paintSky({ skyTop, skyHorizon, seed = 'sky-m5' } = {}) {
         ctx.fill();
       }
       // shaded belly
-      ctx.fillStyle = `rgba(206,208,208,${alpha * 0.55})`;
+      ctx.fillStyle = `rgba(224,206,180,${alpha * 0.6})`;
       ctx.beginPath();
       ctx.ellipse(x0 + (rng.next() - 0.5) * 30 * s, cy + 9 * s, 44 * s, 8 * s, 0, 0, 7);
       ctx.fill();
@@ -95,6 +97,13 @@ export class Environment {
     this.sun.position.set(d[0], d[1], d[2]).normalize().multiplyScalar(100);
     scene.add(this.sun);
 
+    // M5 photo regrade: a cool fill from the opposite sky quadrant. Lambert has no ambient
+    // occlusion or environment probes — without this, every sun-away face goes muddy grey.
+    // A subtle azure bounce restores the blue-vs-gold complementary that the photos show.
+    this.fill = new THREE.DirectionalLight('#a9c3d8', 0.55);
+    this.fill.position.set(-d[0] * 80, 60, -d[2] * 80);
+    scene.add(this.fill);
+
     // base mood = the global lighting block; district moods are deltas on top of it
     this._default = { fog: new THREE.Color(lighting.fog), ground: new THREE.Color(lighting.hemiGround), density: 1 };
     this._moodFog = new THREE.Color(); this._moodGrd = new THREE.Color(); this._mix = new THREE.Color();
@@ -111,18 +120,24 @@ export class Environment {
     this.dome.renderOrder = -10;
     scene.add(this.dome);
 
-    // sun disc + halo, placed to match the directional light exactly
+    // sun disc + double halo, placed to match the directional light exactly.
+    // M5 regrade: two warm halos (wide dust glow + tight core) so the sky carries the sun.
     const sunGroup = new THREE.Group();
     const halo = new THREE.Mesh(
-      new THREE.CircleGeometry(58, 24),
-      new THREE.MeshBasicMaterial({ color: 0xfff3d2, fog: false, depthWrite: false, transparent: true, opacity: 0.22 }),
+      new THREE.CircleGeometry(72, 24),
+      new THREE.MeshBasicMaterial({ color: 0xffdf9e, fog: false, depthWrite: false, transparent: true, opacity: 0.30 }),
+    );
+    const halo2 = new THREE.Mesh(
+      new THREE.CircleGeometry(38, 22),
+      new THREE.MeshBasicMaterial({ color: 0xfff0c2, fog: false, depthWrite: false, transparent: true, opacity: 0.5 }),
     );
     const sunDisc = new THREE.Mesh(
-      new THREE.CircleGeometry(26, 20),
-      new THREE.MeshBasicMaterial({ color: 0xfff6dc, fog: false, depthWrite: false, transparent: true, opacity: 0.95 }),
+      new THREE.CircleGeometry(20, 20),
+      new THREE.MeshBasicMaterial({ color: 0xfff8e0, fog: false, depthWrite: false, transparent: true, opacity: 0.98 }),
     );
-    halo.position.z = -1;
-    sunGroup.add(halo, sunDisc);
+    halo.position.z = -2;
+    halo2.position.z = -1;
+    sunGroup.add(halo, halo2, sunDisc);
     sunGroup.position.copy(this.sun.position).normalize().multiplyScalar(470);
     sunGroup.lookAt(0, 0, 0);
     sunGroup.renderOrder = -9;
@@ -180,7 +195,7 @@ export class Environment {
     this.hemi.groundColor.copy(m.ground);
     const far = this._viewDist / m.density;
     this.scene.fog.far = far;
-    this.scene.fog.near = far * 0.30;                    // M5: the city stays visible deeper into the haze
+    this.scene.fog.near = far * 0.45;                    // M5 regrade: haze starts deeper, the city stays crisp
   }
 
   follow(cameraPosition) { this.dome.position.copy(cameraPosition); }

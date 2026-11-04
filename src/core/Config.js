@@ -15,9 +15,10 @@ export const CONFIG = Object.freeze({
   },
   camera: {
     distance: 5.0,         // metres behind the player (along the route) — M5: a touch further so the city breathes
-    height: 2.4,           // metres above the ground — M5: slightly higher horizon, more skyline in frame
+    height: 3.0,           // M5 regrade: rides ABOVE traffic (bus roofs ~2.85 m) — vehicles sweep under the lens
+                           // instead of clipping through it as a full-frame wall
     lookAhead: 13.5,       // metres ahead the camera looks at — M5: deeper lead into the streetscape
-    lookHeight: 1.3,       // M5: gaze a little above the walker, buildings read as part of the shot
+    lookHeight: 1.5,       // M5 regrade: gaze re-centred for the taller ride (keeps the canyon in frame)
     followLateral: 0.62,   // 1 = camera locks to player sideways, 0 = stays on route centre. M5: rides closer to the median so left-side viaduct piers frame the shot instead of blocking it
     damping: 6.5,          // legacy damping (kept for fov/compat maths)
     near: 0.4,

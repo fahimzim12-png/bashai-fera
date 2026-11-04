@@ -65,6 +65,8 @@ export class CrowdRenderer {
     this._c.set(c.legs);
     this.meshes.upperLeg.setColorAt(slot * 2, this._c); this.meshes.upperLeg.setColorAt(slot * 2 + 1, this._c);
     this.meshes.lowerLeg.setColorAt(slot * 2, this._c); this.meshes.lowerLeg.setColorAt(slot * 2 + 1, this._c);
+    this._c.set(p.skirt ? p.skirt.colour : '#f6f6f6');
+    this.meshes.skirt.setColorAt(slot, this._c);
     for (const part of CROWD_PARTS) if (this.meshes[part].instanceColor) this.meshes[part].instanceColor.needsUpdate = true;
   }
 
@@ -101,6 +103,16 @@ export class CrowdRenderer {
     this._part('upperLeg', slot * 2 + 1, J.hipR[0], J.hipR[1], 0, yaw, pose.thighR || 0, x, z, rY, scale);
     this._part('lowerLeg', slot * 2, J.kneeL[0], J.kneeL[1], 0, yaw, (pose.thighL || 0) + (pose.shinL || 0), x, z, rY, scale);
     this._part('lowerLeg', slot * 2 + 1, J.kneeR[0], J.kneeR[1], 0, yaw, (pose.thighR || 0) + (pose.shinR || 0), x, z, rY, scale);
+    // wrap garment (lungi / sari / kameez): hip-anchored, per-outfit anisotropic scale
+    const skirt = this.meshes.skirt, cfg = pose.skirt;
+    if (cfg) {
+      this._v.set(x, J.hip[1] * scale + rY, z);
+      this._m.compose(this._v, this._qY.setFromAxisAngle(this._up, yaw),
+        this._j.set(cfg.sx * scale, cfg.sy * scale, cfg.sz * scale));
+      skirt.setMatrixAt(slot, this._m);
+    } else {
+      skirt.setMatrixAt(slot, this._m.compose(this._v.set(0, -60, 0), this._q.identity(), this._zero));
+    }
   }
 
   flush() {

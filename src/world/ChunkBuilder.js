@@ -26,9 +26,11 @@ const LAMP_SPACING = 36;
 const TREE_SPACING = 15;
 const DASH = 3, DASH_PERIOD = 6;
 // Milestone 5: rooftop + tree palettes (water tanks, dishes, raintree/palm canopy)
+// M5 regrade: canopy greens lifted toward the saturated raintree/palm greens in the
+// reference photos (q1_farmgate_2, q3_karwan_2) — the old olive tones read grey in fog.
 const TANKS = ['#1d2a33', '#22333d', '#e8e6df'];
-const CANOPY = ['#55703c', '#4c6636', '#5d7a42', '#6b7a3c'];
-const CANOPY_DRY = ['#7d7a3c', '#8a8248', '#6b7042'];
+const CANOPY = ['#4e7c3c', '#3f6e33', '#5d8a44', '#6b8a3c'];
+const CANOPY_DRY = ['#8a8a40', '#96904e', '#74783a'];
 const TOWER_ATLAS = new Set(['commercial', 'marketBlock', 'halfbuilt', 'tower']);
 
 const W = (f, lat, y) => [f.x + f.rx * lat, y, f.z + f.rz * lat];          // route frame -> world point
@@ -62,6 +64,7 @@ export function buildChunk(route, ci) {
   laneMarkings(ground, route, s0, s1);
   viaduct(ground, route, frames, s0, s1);
   poles(ground, route, s0, s1);
+  crossCables(ground, route, s0, s1);
   lamps(ground, route, s0, s1);
   buildings(ground, facadeA, facadeB, signs, route, s0, s1);
   stains(ground, route, s0, s1);
@@ -134,7 +137,7 @@ function laneMarkings(g, route, s0, s1) {
 
 // ---- Metro Rail viaduct over the median -----------------------------------------------------
 function viaduct(g, route, frames, s0, s1) {
-  const top = hexToLinear('#aaa59c'), sideC = hexToLinear('#bdb8ae'), under = hexToLinear('#7f7b73');
+  const top = hexToLinear('#b5b0a6'), sideC = hexToLinear('#c6c1b6'), under = hexToLinear('#8a867e');
   for (let i = 0; i < frames.length - 1; i++) {
     const A = frames[i], B = frames[i + 1];
     const ma = A.profile.elements.find((e) => e.viaduct), mb = B.profile.elements.find((e) => e.viaduct);
@@ -200,6 +203,38 @@ function poles(g, route, s0, s1) {
   }
 }
 
+// ---- Cross-street cable spans (dressing.cables >= 1.4) -------------------------------------
+// The chaotic overhead tangle that spans the whole carriageway in dense Dhaka districts —
+// one catenary from the left pole line to the right pole line, several wires, sagging.
+function crossCables(g, route, s0, s1) {
+  const wire = hexToLinear('#1d1d1f');
+  const SPACING = 38, f = {};
+  for (let k = Math.floor(s0 / SPACING); k * SPACING < s1; k++) {
+    const s = k * SPACING + (hashString(`xcab:${k}`) / 4294967296) * 10;
+    if (s < s0 || s >= s1) continue;
+    const dr = route.segmentAt(s).dressing || {};
+    if ((dr.cables ?? 1) < 1.4) continue;
+    route.space.sample(s, f);
+    const fp = route.profileAt(s).elements.filter((e) => e.kind === 'footpath');
+    if (fp.length < 2) continue;
+    const latL = fp[0].x0 + 0.45, latR = fp[fp.length - 1].x1 - 0.45;
+    const n = 3 + (Math.round((dr.cables ?? 1) * 2) - 2);
+    for (let j = 0; j < n; j++) {
+      const h = hashString(`xcaby:${k}:${j}`) / 4294967296;
+      const y = 7.4 + h * 0.9, sag = 0.9 + h * 0.8;
+      const pA = W(f, latL + (h - 0.5) * 1.4, y), pB = W(f, latR + (h - 0.5) * 1.4, y - 0.3);
+      const SEG = 6;
+      let prev = pA;
+      for (let q = 1; q <= SEG; q++) {
+        const t = q / SEG;
+        const p = [lerp(pA[0], pB[0], t), lerp(pA[1], pB[1], t) - sag * 4 * t * (1 - t), lerp(pA[2], pB[2], t)];
+        g.quad([prev[0], prev[1] + 0.03, prev[2]], [p[0], p[1] + 0.03, p[2]], [p[0], p[1] - 0.03, p[2]], [prev[0], prev[1] - 0.03, prev[2]], wire, { double: true });
+        prev = p;
+      }
+    }
+  }
+}
+
 // ---- Street lights on the road side of each footpath --------------------------------------------
 function lamps(g, route, s0, s1) {
   const pole = hexToLinear('#44474d'), head = hexToLinear('#fff1c4');
@@ -251,13 +286,33 @@ function buildings(g, fac, facB, sg, route, s0, s1) {
     const facT = COMMERCIAL_ATLAS.has(b.archetype) ? facB : fac;
     const arch = b.archetype;
     const P = (ls, lat, y) => [f.x + f.fx * ls + f.rx * lat, y, f.z + f.fz * ls + f.rz * lat];
+    const rf = [f.fx, f.fz], rr = [f.rx, f.rz];
 
     // unfinished top floor (half-built archetype): columns + slab + rebar + netting
     const topY = arch === 'halfbuilt' ? y1 - 3.2 : y1;
 
-    // front facade above the shop band
-    facT.quad(P(-hw, front, 3.6), P(hw, front, 3.6), P(hw, front, topY), P(-hw, front, topY), wall,
-      { hint: toRoad, uv: [uv(-hw, 3.6), uv(hw, 3.6), uv(hw, topY), uv(-hw, topY)] });
+    // front facade above the shop band — M5 PHOTO REGRADE: split into vertical REPAINT
+    // PANELS (Dhaka walls are repainted bay by bay, so neighbouring panels drift apart in
+    // tone and occasionally flip to a second pastel entirely). The facade atlas stays
+    // aligned across panels (same uv origin) so the windows keep running through.
+    const panels = b.w > 9 ? (r.chance(0.5) ? 3 : 2) : 1;
+    const repaint = panels > 1 && r.chance(0.4) ? r.pick(pal.walls) : null;
+    for (let pi = 0; pi < panels; pi++) {
+      const pa = -hw + (pi / panels) * b.w, pb = -hw + ((pi + 1) / panels) * b.w;
+      const tone = pi === 0 ? wall
+        : repaint ? shade(hexToLinear(repaint), 0.92 + r.next() * 0.12)
+        : shade(wall, 0.9 + r.next() * 0.2);
+      facT.quad(P(pa, front, 3.6), P(pb, front, 3.6), P(pb, front, topY), P(pa, front, topY), tone,
+        { hint: toRoad, uv: [uv(pa, 3.6), uv(pb, 3.6), uv(pb, topY), uv(pa, topY)] });
+    }
+    // M5 regrade: a thin projected slab line at EVERY floor — the hard horizontal shadow
+    // that makes low-poly walls read as real floors (photo: q5_street_4/5).
+    if (arch !== 'halfbuilt') {
+      const slab = shade(wall, 1.02);
+      for (let fy = 3.6 + 3.2; fy < topY - 0.8; fy += 3.2) {
+        g.box(P(0, front - side * 0.09, fy), rf, rr, b.w, 0.16, 0.18, slab, { skipBottom: true });
+      }
+    }
     // the two side walls (seen through alleys / at gaps)
     for (const sg of [-1, 1]) {
       const ls = sg * hw, d = (lat) => [Math.abs(lat - front) / 24 + u0, 0];
@@ -266,8 +321,12 @@ function buildings(g, fac, facB, sg, route, s0, s1) {
     }
     // roof
     g.quad(P(-hw, front, y1), P(hw, front, y1), P(hw, back, y1), P(-hw, back, y1), hexToLinear(b.roof), { hint: UP });
-    const rf = [f.fx, f.fz], rr = [f.rx, f.rz];
     const roofPt = (ls, lat) => [f.x + f.fx * ls + f.rx * lat, y1, f.z + f.fz * ls + f.rz * lat];
+    // M5 regrade: parapet band on every finished roof (the flat-roof edge line every
+    // Dhaka rooftop shows); half-built tops stay raw.
+    if (arch !== 'halfbuilt') {
+      g.box(P(0, front - side * 0.1, y1), rf, rr, b.w, 0.5, 0.22, shade(wall, 1.05), { skipBottom: true });
+    }
     if (arch === 'halfbuilt') {
       // top floor skeleton: corner columns + slab + rebar + bamboo + netting
       for (const cx of [-hw + 0.2, hw - 0.2]) for (const cz of [front + side * 0.3, front + side * (b.depth - 0.3)]) {
@@ -363,16 +422,26 @@ function buildings(g, fac, facB, sg, route, s0, s1) {
     if ((arch === 'institutional' || arch === 'commercial') && b.w > 8) {
       g.box(P(0, front - side * 0.12, y1), rf, rr, b.w, 0.5, 0.24, shade(wall, 1.06), { skipBottom: true });
     }
-    // balcony row (midrise): a few slabs with railings
-    if (arch === 'midrise' && b.floors >= 3 && r.chance(0.6)) {
-      const nb = Math.min(4, Math.max(2, Math.floor(b.floors / 2)));
+    // balcony row (midrise): painted railings + laundry — the photo look (q5_street_5)
+    if (arch === 'midrise' && b.floors >= 3 && r.chance(0.78)) {
+      const nb = Math.min(5, Math.max(2, Math.floor(b.floors / 2)));
+      const railC = hexToLinear(r.pick(pal.shutters));
       for (let k = 0; k < nb; k++) {
         const by = 3.6 + 3.2 * (1 + ((k * 2 + r.int(0, 1)) % Math.max(1, b.floors - 1)));
         if (by > y1 - 1.2) continue;
-        const bw2 = r.range(2.2, Math.min(4, b.w - 1));
+        const bw2 = r.range(2.2, Math.min(4.5, b.w - 1));
         const bx0 = r.range(-hw + 0.4, hw - bw2 - 0.4);
         g.box(P(bx0 + bw2 / 2, front - side * 0.5, by - 0.09), rf, rr, bw2, 0.14, 1.0, shade(wall, 0.96), { skipBottom: true });
-        g.box(P(bx0 + bw2 / 2, front - side * 0.98, by + 0.42), rf, rr, bw2, 0.7, 0.05, '#8c9298', { skipBottom: true });
+        g.box(P(bx0 + bw2 / 2, front - side * 0.98, by + 0.42), rf, rr, bw2, 0.7, 0.05, railC, { skipBottom: true });
+        if (r.chance(0.4)) {                               // laundry line on the balcony
+          const n = 2 + r.int(0, 2);
+          for (let j = 0; j < n; j++) {
+            const cx = bx0 + 0.35 + (j + 0.5) * (bw2 - 0.6) / n;
+            g.quad(P(cx - 0.14, front - side * 0.72, by + 0.66), P(cx + 0.14, front - side * 0.72, by + 0.66),
+              P(cx + 0.17, front - side * 0.72, by + 0.12), P(cx - 0.17, front - side * 0.72, by + 0.12),
+              hexToLinear(GARMENTS[(hashString(`blc:${b.sMid.toFixed(1)}:${k}:${j}`) >>> 0) % GARMENTS.length]), { hint: toRoad, double: true });
+          }
+        }
       }
     }
     // entrance portico (institutional)
@@ -383,17 +452,18 @@ function buildings(g, fac, facB, sg, route, s0, s1) {
       }
       g.box(P(0, front - side * 0.9, 3.6), rf, rr, pw + 0.8, 0.35, 2.0, shade(wall, 1.08), { skipBottom: true });
     }
-    if (r.chance(0.03 + 0.2 * Math.min(1.5, dr.billboards ?? 0.3)) && b.w > 8) {     // rooftop billboard (density by district)
+    if (r.chance(0.05 + 0.5 * Math.min(1.5, dr.billboards ?? 0.3)) && b.w > 8) {     // rooftop billboard (density by district)
       const bl = front - side * 0.3;
       const di = pickDesign(`${route.id}:bb:${side}:${b.sMid.toFixed(1)}`, 'ad', 2);
-      const du = designUV(di), w2 = designSpanWidth(di);
-      const by0 = y1 + 0.9, by1 = y1 + 2.1;
+      const du = designUV(di), w2 = Math.min(designSpanWidth(di) * 1.6, b.w * 0.92);
+      const by0 = y1 + 0.7, by1 = y1 + 3.3;
       sg.quad(P(-w2 / 2, bl, by0), P(w2 / 2, bl, by0), P(w2 / 2, bl, by1), P(-w2 / 2, bl, by1), '#ffffff',
         { hint: toRoad, uv: [[du[0], du[1]], [du[2], du[1]], [du[2], du[3]], [du[0], du[3]]] });
       g.quad(P(-w2 / 2, bl + side * 0.05, by0), P(w2 / 2, bl + side * 0.05, by0), P(w2 / 2, bl + side * 0.05, by1), P(-w2 / 2, bl + side * 0.05, by1), '#4a4a4a', { hint: [-toRoad[0], 0, -toRoad[2]] });
       for (const px of [-w2 / 2 + 0.35, w2 / 2 - 0.35]) {
-        g.box(P(px, front - side * 0.5, y1), rf, rr, 0.14, 0.95, 0.14, '#5c5c5c', { skipBottom: true });
+        g.box(P(px, front - side * 0.55, y1), rf, rr, 0.14, 1.6, 0.14, '#5c5c5c', { skipBottom: true });
       }
+      g.box(P(0, bl + side * 0.04, by1), rf, rr, w2, 0.09, 0.09, '#5c5c5c', { skipBottom: true });   // top rail
     }
 
     // building name board above the shop band (some mid-size buildings have one)
@@ -416,34 +486,59 @@ function buildings(g, fac, facB, sg, route, s0, s1) {
       }
     }
 
-    // shopfronts at street level: shutters, signboards with script suggestion, awnings
-    const shops = Math.max(1, Math.round(b.w / 3.6)), sw = b.w / shops, latF = front - side * 0.05;
+    // shopfronts at street level — M5 PHOTO REGRADE: RECESSED shop lines between plaster
+    // piers (photo q1_farmgate_4: the arcade depth + stacked signboards are what make
+    // Dhaka shop rows read as shop rows), corrugated roll shutters, warm-lit interiors,
+    // and a TALL sign band over every opening.
+    const shops = Math.max(1, Math.round(b.w / 3.6)), sw = b.w / shops;
+    const recess = front + side * 0.55;                       // shop plane set back from the face
+    const pierC = shade(wall, 0.98);
+    for (let j = 0; j <= shops; j++) {                        // piers on every shop boundary
+      const px = -hw + j * sw;
+      g.box(P(px, front - side * 0.12, 0), rf, rr, 0.38, 3.1, 0.32, pierC, { skipBottom: true });
+    }
     for (let j = 0; j < shops; j++) {
-      const a0 = -hw + j * sw + 0.04, a1 = -hw + (j + 1) * sw - 0.04;
-      if (r.chance(0.28)) {
-        // open shop: dark interior with a hint of goods inside
-        g.quad(P(a0, latF, 0.18), P(a1, latF, 0.18), P(a1, latF, 3.0), P(a0, latF, 3.0), '#221f1b', { hint: toRoad });
-        g.quad(P(a0 + sw * 0.2, latF - side * 0.012, 0.5), P(a0 + sw * 0.5, latF - side * 0.012, 0.5), P(a0 + sw * 0.5, latF - side * 0.012, 1.5), P(a0 + sw * 0.2, latF - side * 0.012, 1.5), r.pick(pal.awnings), { hint: toRoad });
+      const a0 = -hw + j * sw + 0.2, a1 = -hw + (j + 1) * sw - 0.2;
+      // recess reveals: soffit + both jamb faces (the depth cue)
+      g.quad(P(a0, front, 2.55), P(a1, front, 2.55), P(a1, recess, 2.55), P(a0, recess, 2.55), shade(wall, 0.66), { hint: [0, 1, 0] });
+      g.quad(P(a0, front, 0.18), P(a0, recess, 0.18), P(a0, recess, 2.55), P(a0, front, 2.55), shade(wall, 0.7), { hint: [f.fx, 0, f.fz] });
+      g.quad(P(a1, front, 0.18), P(a1, recess, 0.18), P(a1, recess, 2.55), P(a1, front, 2.55), shade(wall, 0.7), { hint: [-f.fx, 0, -f.fz] });
+      if (r.chance(0.3)) {
+        // open shop: dark interior, warm glow at the top, coloured goods on shelves
+        g.quad(P(a0, recess, 0.18), P(a1, recess, 0.18), P(a1, recess, 2.55), P(a0, recess, 2.55), '#241f19', { hint: toRoad });
+        g.quad(P(a0, recess - side * 0.02, 1.9), P(a1, recess - side * 0.02, 1.9), P(a1, recess - side * 0.02, 2.5), P(a0, recess - side * 0.02, 2.5), '#ffd9a0', { hint: toRoad });
+        const goods = [hexToLinear('#e2793a'), hexToLinear('#c93a3a'), hexToLinear('#7db83a'), hexToLinear('#e2b23f')];
+        for (let sh = 0; sh < 2; sh++) {
+          const gx = r.range(a0 + 0.3, Math.max(a0 + 0.3, a1 - 0.9));
+          g.box(P(gx + 0.3, recess + side * 0.22, 0.5 + sh * 0.75), rf, rr, 0.6, 0.5, 0.4,
+            shade(goods[(hashString(`gd:${b.sMid.toFixed(1)}:${j}:${sh}`) >>> 0) % goods.length], 0.8), { skipBottom: true });
+        }
       } else {
-        g.quad(P(a0, latF, 0.18), P(a1, latF, 0.18), P(a1, latF, 3.0), P(a0, latF, 3.0), r.pick(pal.shutters), { hint: toRoad });
+        // roll shutter at the recess plane: three corrugation bands catch light differently
+        const shut = hexToLinear(r.pick(pal.shutters));
+        g.quad(P(a0, recess, 0.18), P(a1, recess, 0.18), P(a1, recess, 0.97), P(a0, recess, 0.97), shut, { hint: toRoad });
+        g.quad(P(a0, recess, 0.97), P(a1, recess, 0.97), P(a1, recess, 1.76), P(a0, recess, 1.76), shade(shut, 0.82), { hint: toRoad });
+        g.quad(P(a0, recess, 1.76), P(a1, recess, 1.76), P(a1, recess, 2.55), P(a0, recess, 2.55), shade(shut, 0.92), { hint: toRoad });
       }
-      // signboard: coloured backing band + a REAL readable sign quad from the text atlas
+      // TALL sign band: coloured backing board + a REAL readable sign quad from the atlas
       const sign = r.pick(pal.signs), signCol = hexToLinear(sign);
-      const latS = latF - side * 0.012;
-      g.quad(P(a0, latF, 3.0), P(a1, latF, 3.0), P(a1, latF, 3.6), P(a0, latF, 3.6), signCol, { hint: toRoad });
+      const latS = front - side * 0.024;
+      g.quad(P(a0 - 0.18, front - side * 0.02, 3.0), P(a1 + 0.18, front - side * 0.02, 3.0), P(a1 + 0.18, front - side * 0.02, 3.95), P(a0 - 0.18, front - side * 0.02, 3.95), signCol, { hint: toRoad });
       const di = pickDesign(`${route.id}:sign:${side}:${b.sMid.toFixed(1)}:${j}`, r.chance(0.15) ? 'ad' : 'shop', 1);
       const du = designUV(di), wS = designSpanWidth(di);
-      const cx = (a0 + a1) / 2, s0u = Math.max(a0 + 0.04, cx - wS / 2), s1u = Math.min(a1 - 0.04, cx + wS / 2);
-      sg.quad(P(s0u, latS, 3.03), P(s1u, latS, 3.03), P(s1u, latS, 3.57), P(s0u, latS, 3.57), '#ffffff',
+      const cx = (a0 + a1) / 2, s0u = Math.max(a0 + 0.02, cx - wS / 2), s1u = Math.min(a1 - 0.02, cx + wS / 2);
+      sg.quad(P(s0u, latS, 3.08), P(s1u, latS, 3.08), P(s1u, latS, 3.87), P(s0u, latS, 3.87), '#ffffff',
         { hint: toRoad, uv: [[du[0], du[1]], [du[2], du[1]], [du[2], du[3]], [du[0], du[3]]] });
-      const aw = r.pick(pal.awnings), out = latF - side * 1.0;
-      if (r.chance(0.3)) {
-        // two-tone striped awning
+      // shadow strip under the band (the band overhangs the wall face)
+      g.quad(P(a0 - 0.18, front, 2.82), P(a1 + 0.18, front, 2.82), P(a1 + 0.18, front, 3.0), P(a0 - 0.18, front, 3.0), shade(wall, 0.62), { hint: toRoad });
+      // awning from the band bottom
+      const aw = r.pick(pal.awnings), out = front - side * 1.15;
+      if (r.chance(0.32)) {
         const mid = (a0 + a1) / 2, aw2 = shade(hexToLinear(aw), 0.55);
-        g.quad(P(a0, latF, 3.0), P(mid, latF, 3.0), P(mid, out, 2.5), P(a0, out, 2.5), aw, { hint: [toRoad[0] * 0.4, 1, toRoad[2] * 0.4] });
-        g.quad(P(mid, latF, 3.0), P(a1, latF, 3.0), P(a1, out, 2.5), P(mid, out, 2.5), aw2, { hint: [toRoad[0] * 0.4, 1, toRoad[2] * 0.4] });
-      } else {
-        g.quad(P(a0, latF, 3.0), P(a1, latF, 3.0), P(a1, out, 2.5), P(a0, out, 2.5), aw, { hint: [toRoad[0] * 0.4, 1, toRoad[2] * 0.4] });
+        g.quad(P(a0, front, 3.0), P(mid, front, 3.0), P(mid, out, 2.45), P(a0, out, 2.45), aw, { hint: [toRoad[0] * 0.4, 1, toRoad[2] * 0.4] });
+        g.quad(P(mid, front, 3.0), P(a1, front, 3.0), P(a1, out, 2.45), P(mid, out, 2.45), aw2, { hint: [toRoad[0] * 0.4, 1, toRoad[2] * 0.4] });
+      } else if (r.chance(0.5)) {
+        g.quad(P(a0, front, 3.0), P(a1, front, 3.0), P(a1, out, 2.45), P(a0, out, 2.45), aw, { hint: [toRoad[0] * 0.4, 1, toRoad[2] * 0.4] });
       }
     }
   }

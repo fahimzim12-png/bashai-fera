@@ -47,13 +47,19 @@ function buildCar(g) {
   for (const x of [-0.82, 0.82]) for (const z of [-1.35, 1.35]) wheel(g, x, z, 0.31, 0.09);
 }
 
-/** Local bus - tall body, big window band, roof rack hint. */
+/** Local bus - tall body, big window band, roof rack hint.
+ *  M5 CONCEPT LIVERY (user frames): the bands are baked NEUTRAL DARK so the per-instance
+ *  tint defines the scheme - a red 'DHAKA' coach, a pastel pink/cream city bus, a green
+ *  or sky-blue local, exactly the fleet variety the concept frames show. */
 function buildBus(g) {
   box(g, 0, 0.55, 0, 2.45, 2.0, 10.4, PAINT);
   box(g, 0, 1.5, 0.1, 2.48, 0.85, 9.6, GLASS);                    // window band
+  box(g, 0, 1.36, 0.1, 2.5, 0.22, 9.7, '#8f9496');                // waist band (tints with the body)
+  box(g, 0, 0.6, 0.1, 2.5, 0.14, 9.7, '#7a8084');                 // skirt line
   box(g, 0, 2.55, 0, 2.3, 0.12, 10.0, TRIM);                      // roof
   box(g, 0, 2.67, -1.2, 2.0, 0.16, 6.5, TRIM);                    // roof rack
   box(g, 0, 1.9, 5.18, 2.3, 0.5, 0.06, GLASS);                    // windscreen
+  box(g, 0, 1.55, 5.14, 2.2, 0.42, 0.06, '#f2e2b0');              // destination board
   box(g, -0.9, 0.8, 5.2, 0.4, 0.16, 0.05, LIGHT_F); box(g, 0.9, 0.8, 5.2, 0.4, 0.16, 0.05, LIGHT_F);
   box(g, -0.9, 0.8, -5.2, 0.4, 0.16, 0.05, LIGHT_R); box(g, 0.9, 0.8, -5.2, 0.4, 0.16, 0.05, LIGHT_R);
   for (const x of [-1.15, 1.15]) for (const z of [-3.6, -1.2, 3.4]) wheel(g, x, z, 0.46, 0.12);
@@ -85,20 +91,25 @@ function buildCng(g) {
   wheel(g, 0, 1.18, 0.28, 0.08);                                  // front single
 }
 
-/** Cycle rickshaw with folded-hood canopy + baked puller. */
+/** Cycle rickshaw with folded-hood canopy + baked puller.
+ *  M5 PHOTO ART (q5_street_1/2): the hood is a rolling colour bomb — alternating bright
+ *  panels with a yellow trim rail, plus a painted seat back. Fixed colours survive the
+ *  instance tint (near-white base) so every rickshaw carries the folk-art look. */
 function buildRickshaw(g) {
+  const HOOD = ['#2166b0', '#c23b2e', '#2e8b57', '#d97e2b', '#c23b7a'];
   box(g, 0, 0.62, -0.75, 0.9, 0.06, 1.5, PAINT);                  // chassis
   box(g, 0, 0.68, -1.05, 0.82, 0.5, 0.5, PAINT, { top: '#c9b8a0' });  // seat
-  // arched hood (folded look) over the seat
-  const HOOD = '#f6f6f2';
+  box(g, 0, 1.18, -1.28, 0.78, 0.34, 0.06, '#c9403a');            // painted seat-back panel
+  // arched hood over the seat: alternating bright panels + cream trim rails
   for (let i = 0; i < 4; i++) {
     const z = -1.32 + i * 0.22, h = 1.86 - Math.abs(i - 1.2) * 0.13;
-    box(g, 0, h, z, 0.92, 0.05, 0.24, HOOD);
+    box(g, 0, h, z, 0.92, 0.05, 0.24, HOOD[i % HOOD.length]);
+    box(g, 0, h + 0.05, z, 0.94, 0.03, 0.05, '#f2d43a');          // yellow trim
     box(g, -0.45, 0.68, z, 0.04, h - 0.68, 0.2, PAINT);           // hood posts
     box(g, 0.45, 0.68, z, 0.04, h - 0.68, 0.2, PAINT);
   }
-  box(g, -0.5, 0.62, 0.55, 0.05, 0.75, 1.3, PAINT);               // puller frame rails
-  box(g, 0.5, 0.62, 0.55, 0.05, 0.75, 1.3, PAINT);
+  box(g, -0.5, 0.62, 0.55, 0.05, 0.75, 1.3, '#2166b0');           // puller frame rails (painted)
+  box(g, 0.5, 0.62, 0.55, 0.05, 0.75, 1.3, '#2166b0');
   box(g, 0, 0.9, 1.15, 0.5, 0.06, 0.06, TRIM);                    // handlebar
   // puller (tint darkens him slightly - acceptable shading)
   box(g, -0.32, 0.95, 0.82, 0.34, 0.42, 0.22, '#3d4c63');         // torso leaning forward
@@ -152,19 +163,19 @@ export const VEHICLE_TYPES = ['bus', 'truck', 'microbus', 'van', 'car', 'cng', '
 /** Physical + traffic-sim properties per type (metres, m/s). */
 export const VEHICLE_SPECS = {
   bus:        { build: buildBus,        len: 10.8, wid: 2.5,  speed: [3.5, 6.5],  weight: 0.10,
-               colours: ['#c9403a', '#2e7d4f', '#3a6ea8', '#c9a23a', '#b03a68'] },
+               colours: ['#c9403a', '#e8b8c8', '#f0ece0', '#2e7d4f', '#7fa8c8'] },  // DHAKA red, pink-cream, cream, green, sky-blue
   truck:      { build: buildTruck,      len: 7.8,  wid: 2.4,  speed: [3.0, 5.5],  weight: 0.07,
-               colours: ['#3a5c8c', '#8c3a3a', '#3a7a4a', '#8c7434'] },
+               colours: ['#3a5c8c', '#8c3a3a', '#3a7a4a', '#c9822e'] },
   microbus:   { build: buildMicrobus,   len: 5.4,  wid: 1.95, speed: [4.5, 8.0],  weight: 0.10,
                colours: ['#d8d8d4', '#8c9298', '#3a4a5c', '#5c6e58'] },
   van:        { build: buildVan,        len: 5.1,  wid: 1.95, speed: [4.0, 7.5],  weight: 0.07,
                colours: ['#d0cdc2', '#7c8894', '#c9a23a'] },
   car:        { build: buildCar,        len: 4.4,  wid: 1.75, speed: [5.0, 9.5],  weight: 0.24,
-               colours: ['#cfd3d6', '#8c9298', '#23262b', '#7c1f22', '#2c4a7c', '#e8e4da'] },
+               colours: ['#e8b428', '#e8b428', '#e8e8e4', '#cfd3d6', '#23262b', '#b8262c', '#2c4a7c', '#e0c26a'] },  // 2x taxi yellow
   cng:        { build: buildCng,        len: 3.2,  wid: 1.45, speed: [4.5, 8.5],  weight: 0.18,
-               colours: ['#2e7d4f', '#2a7347', '#33865a'] },
+               colours: ['#2f9e5b', '#2a9150', '#33ab63'] },
   rickshaw:   { build: buildRickshaw,   len: 2.8,  wid: 1.05, speed: [1.8, 3.6],  weight: 0.16,
-               colours: ['#2166b0', '#c23b2e', '#2e8b57', '#c9a23a', '#7d3ac1'] },
+               colours: ['#f4f2ea', '#f6f4ec', '#f2f0e6'] },   // hood art is baked; keep the tint near-white
   motorcycle: { build: buildMotorcycle, len: 2.1,  wid: 0.8,  speed: [6.0, 11.0], weight: 0.08,
                colours: ['#8c1f1f', '#1f3a8c', '#23262b', '#c9c9c4'] },
 };

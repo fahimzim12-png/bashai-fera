@@ -147,14 +147,30 @@ export class CrowdSystem {
     if (renderer) this.attach(renderer);
   }
 
-  /** Clothing: office shirts, panjabis, saris - instance colours chosen once per person. */
+  /** Clothing — M5 concept regrade: lungi wraps, saris and salwar-kameez via the skirt
+   *  part (per-instance tint + per-outfit scale). Instance colours chosen once per person. */
   _dress(p, prng) {
     const P = CROWD_PALETTES;
     const skin = P.skins[prng.int(0, P.skins.length - 1)];
-    if (p.variant === 'headB' && prng.next() < 0.75) {
-      const sari = P.sari[prng.int(0, P.sari.length - 1)];
-      p.colours = { skin, torso: sari, arm: skin, legs: sari };
+    p.skirt = null;
+    if (p.variant === 'headB') {
+      if (prng.next() < 0.82) {
+        const sariMode = prng.next() < 0.55;
+        const col = (sariMode ? P.sari : P.kameez)[prng.int(0, (sariMode ? P.sari : P.kameez).length - 1)];
+        p.skirt = sariMode
+          ? { colour: col, sx: 1.12, sy: 1.12, sz: 1.12 }        // floor-length sari drape
+          : { colour: col, sx: 1.0, sy: 0.58, sz: 1.0 };         // knee-length kameez over salwar
+        p.colours = { skin, torso: col, arm: skin, legs: sariMode ? '#2c2c30' : '#d8d4c8' };
+        return;
+      }
+      p.colours = { skin, torso: P.shirts[prng.int(0, P.shirts.length - 1)], arm: skin, legs: P.pants[prng.int(0, P.pants.length - 1)] };
     } else {
+      if (prng.next() < 0.48) {                                  // the lungi men
+        const col = P.lungi[prng.int(0, P.lungi.length - 1)];
+        p.skirt = { colour: col, sx: 1.0, sy: 0.97, sz: 1.0 };
+        p.colours = { skin, torso: P.shirts[prng.int(0, P.shirts.length - 1)], arm: skin, legs: '#3a3a38' };
+        return;
+      }
       p.colours = {
         skin,
         torso: P.shirts[prng.int(0, P.shirts.length - 1)],
@@ -269,7 +285,9 @@ export class CrowdSystem {
         yaw = heading + p.yaw;
       }
       pose.rootY = (pose.rootY || 0) + (pose.bobY || 0);
+      pose.skirt = p.skirt;                              // wrap garment rides with the pose
       if (this.renderer) this.renderer.writePerson(slot.i, pose, this._p3.x, this._p3.z, yaw, p.scale, p.variant);
+      pose.skirt = null;                                 // keep recycled poses clean
     }
     this.stats.visible = visible;
     if (this.renderer) this.renderer.flush();

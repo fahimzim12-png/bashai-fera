@@ -21,16 +21,17 @@ export function createRoadTexture() {
   const rng = new Rng('roads-v1');
 
   // ---- road region [0..320) -------------------------------------------------
-  // M5: base lifted from #3b3e42 — in linear light under hemi-only (viaduct shadow) the
-  // old value read near-black; this still reads as weathered asphalt but keeps detail.
-  ctx.fillStyle = '#50545a';
+  // M5 CONCEPT REGRADE: the user's reference frames show LIGHT dusty warm-gray asphalt
+  // (almost concrete-tone in daylight), so the base sits bright and the dark dressing is
+  // kept subtle.
+  ctx.fillStyle = '#8a827a';
   ctx.fillRect(0, 0, 320, size);
   // wheel-polish bands at lane centres (3 lanes across 9.6 m -> u 1/6, 3/6, 5/6 of 320 px)
   for (const cx of [320 / 6, 320 / 2, (320 * 5) / 6]) {
-    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';
     ctx.fillRect(cx - 9, 0, 18, size);
     // oil drip streak at the centre of the band
-    ctx.fillStyle = 'rgba(10,10,12,0.16)';
+    ctx.fillStyle = 'rgba(10,10,12,0.10)';
     const oy = rng.next() * size;
     ctx.fillRect(cx - 3, oy, 6, 30 + rng.next() * 50);
   }
@@ -39,9 +40,9 @@ export function createRoadTexture() {
   for (let p = 0; p < patches; p++) {
     const px = rng.next() * 280, py = rng.next() * size;
     const pw = 24 + rng.next() * 60, ph = 18 + rng.next() * 60;
-    ctx.fillStyle = rng.chance(0.5) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.09)';
+    ctx.fillStyle = rng.chance(0.5) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
     ctx.fillRect(px, py, pw, ph);
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = 1.5;
     ctx.strokeRect(px, py, pw, ph);
   }
   // tar seams running along the road (v direction)
@@ -62,7 +63,7 @@ export function createRoadTexture() {
   }
 
   // ---- footpath region [320..416) -------------------------------------------
-  ctx.fillStyle = '#b3ac9e';
+  ctx.fillStyle = '#c0b29c';
   ctx.fillRect(320, 0, 96, size);
   // paver joints: across every 24 px, along every 64 px (0.45 m pavers)
   ctx.strokeStyle = 'rgba(60,54,44,0.30)'; ctx.lineWidth = 1.5;
@@ -79,7 +80,7 @@ export function createRoadTexture() {
   ctx.fillRect(404, 0, 12, size);
 
   // ---- median region [416..512) ----------------------------------------------
-  ctx.fillStyle = '#a9a49a';
+  ctx.fillStyle = '#b5ac9a';
   ctx.fillRect(416, 0, 96, size);
   ctx.strokeStyle = 'rgba(70,66,58,0.32)'; ctx.lineWidth = 2;
   for (let y = 0; y <= size; y += 128) { ctx.beginPath(); ctx.moveTo(416, y + 0.5); ctx.lineTo(512, y + 0.5); ctx.stroke(); }

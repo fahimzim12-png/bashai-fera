@@ -149,27 +149,27 @@ test('Karwan Bazar zone: market block, rail line and towers all behind the sheds
   assert.ok(signs.triCount > 0, 'zone carries readable market signage');
 });
 
-test('fountain v2: the Kundu petal silhouette, DRY pool, tin fence with posters', () => {
+test('fountain v3: the Kundu petal silhouette, RUNNING pool, striped kerb + brass rail ring', () => {
   const route = new RouteModel(loadRouteJson());
   const lm = byId(route, 'saarc-fountain');
   assert.equal(landmarkS(lm, route), route.length + lm.aheadOfEnd);
   const { route: r2, data, signs } = build(lm);
   const p = data.positions, cols = data.colors;
   const fc = r2.space.sample(r2.length + lm.aheadOfEnd, {});
-  const stale = [0.107, 0.195, 0.169];                        // ~linear of #5c7a72 (silt film)
-  let staleTris = 0, maxY = 0, maxH = 0;
+  const water = [0.275, 0.546, 0.694];                        // ~linear of #8fc3d9 (basin water)
+  let waterTris = 0, maxY = 0, maxH = 0;
   for (let i = 0; i < p.length; i += 3) {
     maxY = Math.max(maxY, p[i + 1]);
     maxH = Math.max(maxH, Math.hypot(p[i] - fc.x, p[i + 2] - fc.z));
   }
   for (let t = 0; t < cols.length; t += 9) {
-    const dr = Math.abs(cols[t] - stale[0]) + Math.abs(cols[t + 1] - stale[1]) + Math.abs(cols[t + 2] - stale[2]);
-    if (dr < 0.2) staleTris++;
+    const dr = Math.abs(cols[t] - water[0]) + Math.abs(cols[t + 1] - water[1]) + Math.abs(cols[t + 2] - water[2]);
+    if (dr < 0.2) waterTris++;
   }
-  assert.ok(staleTris > 12, 'dry silt basin present (' + staleTris + ' triangles)');
+  assert.ok(waterTris > 12, 'running basin water present (' + waterTris + ' triangles)');
   assert.ok(maxY > 9.3 && maxY < 10.2, 'tallest petals reach the sourced 9.75 m: ' + maxY);
-  assert.ok(maxH > 20 && maxH < 26, 'plaza + fence ring around a 32 m pool: ' + maxH);
-  assert.ok(signs.triCount > 0, 'poster ring uses the sign atlas');
+  assert.ok(maxH > 20 && maxH < 26, 'plaza + kerb ring around a 32 m pool: ' + maxH);
+  assert.ok(signs.triCount > 0, 'wall posters use the sign atlas');
 });
 
 test('clears: market + Khamarbari clear the left streetwall, footbridge clears the junction, right wall intact', () => {

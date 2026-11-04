@@ -16,10 +16,13 @@ export function buildMarket(g, sg, route, lm) {
   const steelCol = hexToLinear('#6e747c'), truss = hexToLinear('#5d636b');
   const darkIn = hexToLinear('#2a2622'), wallBack = hexToLinear('#8a7f70');
   const blockA = hexToLinear('#7d7466'), blockWin = hexToLinear('#3a4148');
-  const tarpBlue = hexToLinear('#2f6ea8'), tarpOrange = hexToLinear('#d97e2f');
+  // photo q3_karwan_*: blue + grey canvas tarps over the gaps (add green — banana-leaf blue-greens)
+  const tarpBlue = hexToLinear('#2f6ea8'), tarpOrange = hexToLinear('#d97e2f'), tarpGreen = hexToLinear('#3f8a5c');
   const bamboo = hexToLinear('#b8a25c');
-  const crate = hexToLinear('#8a6b42'), crateTop = hexToLinear('#c94f3f');
+  const crate = hexToLinear('#8a6b42'), crateTop = hexToLinear('#c94f3f'), crateBlue = hexToLinear('#2a5fa8');
   const PRODUCE = ['#c4453a', '#3f9a4e', '#d98e2b', '#b5432f', '#4f8a3d', '#c9b23c'].map(hexToLinear);
+  // M5 photo regrade: the big saturated GROUND piles (q3_karwan_2: bananas/cauliflower greens)
+  const MOUND = ['#77a07f', '#8fae5c', '#a4b16d', '#c4453a', '#d98e2b', '#5c8a3d'].map(hexToLinear);
 
   const frameCache = new Map();
   const frameAt = (s) => {
@@ -106,7 +109,7 @@ export function buildMarket(g, sg, route, lm) {
         g.box(P(f, 0, fr + 1.2, 0), [f.fx, f.fz], [f.rx, f.rz], 0.09, 3.4, 0.09, bamboo, { skipBottom: true });
         g.box(P(f, 0, fr + depth - 1.2, 0), [f.fx, f.fz], [f.rx, f.rz], 0.09, 3.2, 0.09, bamboo, { skipBottom: true });
       }
-      const tarp = rng.chance(0.5) ? tarpBlue : tarpOrange;
+      const tarp = rng.chance(0.4) ? tarpBlue : rng.chance(0.5) ? tarpOrange : tarpGreen;
       g.quad(P(ga, 0, fr + 0.6, 3.4), P(gb, 0, gb.front + 0.6, 3.2), P(gb, 0, gb.front + depth - 0.6, 3.2), P(ga, 0, fr + depth - 0.6, 3.4), tarp, { hint: [0, 1, 0] });
     }
 
@@ -116,7 +119,7 @@ export function buildMarket(g, sg, route, lm) {
       const fr2 = fc.front;
       for (let j = 0; j < 3; j++) {
         const off = (j - 1) * 1.1;
-        g.box(P(fc, off, fr2 + 1.4, j * 0.42), [fc.fx, fc.fz], [fc.rx, fc.rz], 0.62, 0.4, 0.62, j % 2 ? crate : shade(crate, 1.12), { skipBottom: true, top: crateTop });
+        g.box(P(fc, off, fr2 + 1.4, j * 0.42), [fc.fx, fc.fz], [fc.rx, fc.rz], 0.62, 0.4, 0.62, j % 2 ? crate : crateBlue, { skipBottom: true, top: j % 2 ? crateTop : shade(crateBlue, 1.2) });
       }
       // bamboo tukri basket on the ground
       const bp = P(fc, 1.9, fr2 + 1.2, 0);
@@ -126,6 +129,21 @@ export function buildMarket(g, sg, route, lm) {
           [bp[0] + Math.sin(a) * fc.rx * 0.42 + Math.cos(a) * fc.fx * 0.42, bp[1], bp[2] + Math.sin(a) * fc.rz * 0.42 + Math.cos(a) * fc.fz * 0.42],
           [bp[0] + Math.sin(a2) * fc.rx * 0.42 + Math.cos(a2) * fc.fx * 0.42, bp[1], bp[2] + Math.sin(a2) * fc.rz * 0.42 + Math.cos(a2) * fc.fz * 0.42],
           shade(bamboo, 0.85 + (j % 2) * 0.2), [0, 1, 0]);
+      }
+      // M5 PHOTO REGRADE: the wholesale ground piles — saturated mounds of greens/red/orange
+      // spilling toward the road (q3_karwan_2), the single strongest colour note of the district
+      const nm = 2 + (b % 2);
+      for (let m = 0; m < nm; m++) {
+        const mp = P(fc, -2.4 + m * 2.1, fr2 + 2.6 + rng.next() * 1.2, 0);
+        const col = MOUND[(b * 3 + m + rng.int(0, 2)) % MOUND.length];
+        const R = 0.75 + rng.next() * 0.45;
+        for (let j = 0; j < 6; j++) {
+          const a = (j / 6) * Math.PI * 2, a2 = ((j + 1) / 6) * Math.PI * 2;
+          g.tri([mp[0], mp[1] + R * 0.55, mp[2]],
+            [mp[0] + Math.sin(a) * fc.rx * R + Math.cos(a) * fc.fx * R, mp[1], mp[2] + Math.sin(a) * fc.rz * R + Math.cos(a) * fc.fz * R],
+            [mp[0] + Math.sin(a2) * fc.rx * R + Math.cos(a2) * fc.fx * R, mp[1], mp[2] + Math.sin(a2) * fc.rz * R + Math.cos(a2) * fc.fz * R],
+            j % 2 ? col : shade(col, 1.18), [0, 1, 0]);
+        }
       }
     }
 
