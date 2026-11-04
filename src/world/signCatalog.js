@@ -39,6 +39,15 @@ export const DESIGNS = [
   SH('আপনার শহর আপনার পথ', 'YOUR CITY YOUR WAY', '#1d4ed8', '#ffffff', '#facc15', 'ad', 2),
   SH('সবুজ ঢাকা গড়ি', 'GREEN DHAKA', '#15803d', '#f0fdf4', '#fef08a', 'ad', 2),
   SH('গার্মেন্টস পাইকারি বাজার', 'GARMENTS WHOLESALE', '#701a30', '#fff1f2', '#fb7185', 'building', 2),
+  // Milestone 4: metro station nameboards (DMTCL brand green), market zone + corridor identities.
+  SH('ফার্মগেট', 'FARMGATE', '#006747', '#ffffff', '#facc15', 'building', 2),
+  SH('কাওরান বাজার', 'KAWRAN BAZAR', '#006747', '#ffffff', '#facc15', 'building', 2),
+  SH('কাওরান বাজার কমপ্লেক্স', 'KAWRAN BAZAR COMPLEX', '#3f3f46', '#fafafa', '#facc15', 'building', 2),
+  SH('এফডিসি', 'BFDC', '#1f2937', '#f9fafb', '#facc15', 'building', 2),
+  SH('সোনারগাঁও', 'SONARGAON', '#134e4a', '#f0fdfa', '#fbbf24', 'building', 2),
+  SH('পাইকারি ফল আড়ৎ', 'FRUIT ARAT', '#7c2d12', '#fff7ed', '#fbbf24', 'shop'),
+  SH('পাইকারি মাছ বাজার', 'FISH MARKET', '#0c4a6e', '#e0f2fe', '#38bdf8', 'shop'),
+  SH('কাঁচা মাছ-মাংস নিষিদ্ধ', 'NO RAW PRODUCE', '#7f1d1d', '#fee2e2', '#fbbf24', 'ad'),
 ];
 
 // Pack designs into the atlas grid (span-2 designs sit on even columns).
@@ -73,6 +82,12 @@ export function pickDesign(key, kind = 'shop', span = 0) {
     if (d.kind === kind && (!span || d.span === span)) pool.push(i);
   }
   return pool[(hashString(key) >>> 0) % pool.length];
+}
+
+/** Exact design lookup by its Latin text (station nameboards, FDC, hotel...). -1 if absent. */
+export function designByText(en) {
+  for (let i = 0; i < DESIGNS.length; i++) if (DESIGNS[i].en === en) return i;
+  return -1;
 }
 
 /** World-space width of a design's quad (metres). */

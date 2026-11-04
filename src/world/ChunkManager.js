@@ -10,7 +10,7 @@ import { toBufferGeometry } from '../render/GeometryUtil.js';
 const EMPTY = new THREE.BufferGeometry();
 
 export class ChunkManager {
-  constructor({ scene, route, groundMaterial, facadeMaterial, signMaterial = facadeMaterial, aheadChunks = 4 }) {
+  constructor({ scene, route, groundMaterial, paveMaterial = groundMaterial, facadeMaterial, facadeBMaterial = facadeMaterial, signMaterial = facadeMaterial, aheadChunks = 4 }) {
     this.scene = scene;
     this.route = route;
     this.aheadChunks = aheadChunks;
@@ -22,13 +22,18 @@ export class ChunkManager {
     this.pool = new ObjectPool(() => {
       const group = new THREE.Group();
       const ground = new THREE.Mesh(EMPTY, groundMaterial);
+      const pave = new THREE.Mesh(EMPTY, paveMaterial);
       const facade = new THREE.Mesh(EMPTY, facadeMaterial);
+      const facadeB = new THREE.Mesh(EMPTY, facadeBMaterial);
       const signs = new THREE.Mesh(EMPTY, signMaterial);
-      group.add(ground, facade, signs);
-      group.matrixAutoUpdate = ground.matrixAutoUpdate = facade.matrixAutoUpdate = signs.matrixAutoUpdate = false;
-      return { group, ground, facade, signs, tris: 0 };
+      ground.receiveShadow = true; pave.receiveShadow = true;       // road catches the shadow map
+      facade.castShadow = facade.receiveShadow = true;              // buildings cast on the high tier
+      facadeB.castShadow = facadeB.receiveShadow = true;
+      group.add(ground, pave, facade, facadeB, signs);
+      group.matrixAutoUpdate = ground.matrixAutoUpdate = pave.matrixAutoUpdate = facade.matrixAutoUpdate = facadeB.matrixAutoUpdate = signs.matrixAutoUpdate = false;
+      return { group, ground, pave, facade, facadeB, signs, tris: 0 };
     }, (e) => {
-      for (const m of [e.ground, e.facade, e.signs]) { if (m.geometry !== EMPTY) m.geometry.dispose(); m.geometry = EMPTY; }
+      for (const m of [e.ground, e.pave, e.facade, e.facadeB, e.signs]) { if (m.geometry !== EMPTY) m.geometry.dispose(); m.geometry = EMPTY; }
       e.tris = 0;
     });
   }
@@ -45,12 +50,16 @@ export class ChunkManager {
     const data = buildChunk(this.route, ci);
     const e = this.pool.acquire();
     e.ground.geometry = data.ground.vertexCount ? toBufferGeometry(data.ground) : EMPTY;
+    e.pave.geometry = data.pave.vertexCount ? toBufferGeometry(data.pave) : EMPTY;
     e.facade.geometry = data.facade.vertexCount ? toBufferGeometry(data.facade) : EMPTY;
+    e.facadeB.geometry = data.facadeB.vertexCount ? toBufferGeometry(data.facadeB) : EMPTY;
     e.signs.geometry = data.signs.vertexCount ? toBufferGeometry(data.signs) : EMPTY;
     e.ground.visible = data.ground.vertexCount > 0;
+    e.pave.visible = data.pave.vertexCount > 0;
     e.facade.visible = data.facade.vertexCount > 0;
+    e.facadeB.visible = data.facadeB.vertexCount > 0;
     e.signs.visible = data.signs.vertexCount > 0;
-    e.tris = data.ground.triCount + data.facade.triCount + data.signs.triCount;
+    e.tris = data.ground.triCount + data.pave.triCount + data.facade.triCount + data.facadeB.triCount + data.signs.triCount;
     this.scene.add(e.group);
     this.chunks.set(ci, e);
     const ms = performance.now() - t0;

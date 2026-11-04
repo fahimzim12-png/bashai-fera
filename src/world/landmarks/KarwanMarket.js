@@ -7,9 +7,9 @@ import { Rng } from '../../core/Rng.js';
 import { hexToLinear, shade } from '../../render/GeometryBuilder.js';
 import { beam } from './util.js';
 
-export function buildMarket(g, route, lm) {
+export function buildMarket(g, sg, route, lm) {
   const rng = new Rng(`${route.id}:${lm.id}`);
-  const side = lm.side ?? 1;                               // 1 = right of travel direction
+  const side = lm.side ?? -1;                             // -1 = LEFT of travel (the real market side)
   const depth = 13, eave = 4.2, ridge = 6.6;
   const MODULE = 24, SHED = 20, BAY = 2.5;
 
@@ -18,6 +18,7 @@ export function buildMarket(g, route, lm) {
   const blockA = hexToLinear('#7d7466'), blockWin = hexToLinear('#3a4148');
   const tarpBlue = hexToLinear('#2f6ea8'), tarpOrange = hexToLinear('#d97e2f');
   const bamboo = hexToLinear('#b8a25c');
+  const crate = hexToLinear('#8a6b42'), crateTop = hexToLinear('#c94f3f');
   const PRODUCE = ['#c4453a', '#3f9a4e', '#d98e2b', '#b5432f', '#4f8a3d', '#c9b23c'].map(hexToLinear);
 
   const frameCache = new Map();
@@ -25,12 +26,15 @@ export function buildMarket(g, route, lm) {
     const key = Math.round(s * 2) / 2;
     if (!frameCache.has(key)) {
       const f = route.space.sample(key, {});
-      f.front = route.profileAt(Math.min(Math.max(key, 0), route.length)).frontageR;
+      const prof = route.profileAt(Math.min(Math.max(key, 0), route.length));
+      // builder latitude = distance INTO the market side (positive); P() applies the side sign
+      const frontage = side < 0 ? prof.frontageL : prof.frontageR;
+      f.front = Math.abs(frontage);
       frameCache.set(key, f);
     }
     return frameCache.get(key);
   };
-  // world point: ls along route, lat lateral (positive = market side), height y
+  // world point: ls along route, lat lateral INTO the market side (positive), height y
   const P = (f, ls, lat, y) => [f.x + f.fx * ls + f.rx * lat * side, y, f.z + f.fz * ls + f.rz * lat * side];
 
   for (let ms = lm.s0; ms + SHED <= lm.s1 + 0.01; ms += MODULE) {
@@ -104,6 +108,25 @@ export function buildMarket(g, route, lm) {
       }
       const tarp = rng.chance(0.5) ? tarpBlue : tarpOrange;
       g.quad(P(ga, 0, fr + 0.6, 3.4), P(gb, 0, gb.front + 0.6, 3.2), P(gb, 0, gb.front + depth - 0.6, 3.2), P(ga, 0, fr + depth - 0.6, 3.4), tarp, { hint: [0, 1, 0] });
+    }
+
+    // crate stacks + bamboo basket rings in front of the sheds (porter gear, tukri baskets)
+    for (let b = 0; b < nb; b += 2) {
+      const fc = frameAt(ms + SHED * ((b + 0.5) / nb));
+      const fr2 = fc.front;
+      for (let j = 0; j < 3; j++) {
+        const off = (j - 1) * 1.1;
+        g.box(P(fc, off, fr2 + 1.4, j * 0.42), [fc.fx, fc.fz], [fc.rx, fc.rz], 0.62, 0.4, 0.62, j % 2 ? crate : shade(crate, 1.12), { skipBottom: true, top: crateTop });
+      }
+      // bamboo tukri basket on the ground
+      const bp = P(fc, 1.9, fr2 + 1.2, 0);
+      for (let j = 0; j < 6; j++) {
+        const a = (j / 6) * Math.PI * 2, a2 = ((j + 1) / 6) * Math.PI * 2;
+        g.tri([bp[0], bp[1] + 0.3, bp[2]],
+          [bp[0] + Math.sin(a) * fc.rx * 0.42 + Math.cos(a) * fc.fx * 0.42, bp[1], bp[2] + Math.sin(a) * fc.rz * 0.42 + Math.cos(a) * fc.fz * 0.42],
+          [bp[0] + Math.sin(a2) * fc.rx * 0.42 + Math.cos(a2) * fc.fx * 0.42, bp[1], bp[2] + Math.sin(a2) * fc.rz * 0.42 + Math.cos(a2) * fc.fz * 0.42],
+          shade(bamboo, 0.85 + (j % 2) * 0.2), [0, 1, 0]);
+      }
     }
 
     // background wholesale block (grimy, small windows) on most modules

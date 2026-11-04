@@ -73,8 +73,8 @@ await session('desktop', { viewport: { width: 800, height: 450 } }, '?debug=1&ad
   await page.screenshot({ path: `${out}/d1-ready.png` });
   let st = await state(page);
   check(st.state === 'ready' && st.chunks >= 4, `desktop: reaches ready with chunks loaded (${st.chunks})`);
-  check(st.landmarks >= 5 && st.landmarkTris > 3000 && st.landmarkTris < 16000,
-    `desktop: ${st.landmarks} landmark meshes built, ${st.landmarkTris} tris total (budget < 16k)`);
+  check(st.landmarks >= 8 && st.landmarkTris > 3000 && st.landmarkTris < 22000,
+    `desktop: ${st.landmarks} landmark meshes built, ${st.landmarkTris} tris total (budget < 22k)`);
   console.log('      gpu:', st.gpu, '| tier:', st.tier, '| canvas:', st.w + 'x' + st.h);
   await page.click('[data-action="start"]');
   await waitFor(page, () => window.__bashai.player.s > 3);
@@ -122,8 +122,8 @@ await session('full-route', { viewport: { width: 480, height: 270 } }, '?debug=1
       await page.screenshot({ path: `${out}/f1-farmgate.png` }); shotFarmgate = true;
       check(st.landmarkVis >= 1, `full-route: footbridge in view at s=${st.s?.toFixed(0)} (${st.landmarkVis} landmarks visible)`);
     }
-    if (!shot && st.s > 700) { await page.screenshot({ path: `${out}/r1-karwan.png` }); shot = true; }
-    if (!shotFountain && st.s > 1050) {                                 // fountain terminus down the avenue
+    if (!shot && st.s > 900) { await page.screenshot({ path: `${out}/r1-karwan.png` }); shot = true; }
+    if (!shotFountain && st.s > 1150) {                                 // fountain terminus down the avenue
       await page.screenshot({ path: `${out}/f2-fountain.png` }); shotFountain = true;
       check(st.landmarkVis >= 1, `full-route: fountain visible ahead at s=${st.s?.toFixed(0)}`);
     }
@@ -175,14 +175,14 @@ await session('redmi9-like', redmi, '?debug=1&adapt=0', async (page) => {
 });
 
 // ---- 4. Portrait phone + a jump straight to Karwan Bazar ---------------------------------------------------------------
-await session('portrait', { viewport: { width: 393, height: 851 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, '?at=650&adapt=0', async (page) => {
+await session('portrait', { viewport: { width: 393, height: 851 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, '?at=950&adapt=0', async (page) => {
   await waitReady(page);
   await page.screenshot({ path: `${out}/p0-ready.png` });
   await page.tap('[data-action="start"]');
   await waitFor(page, () => window.__bashai.sm.name === 'playing');
   await page.waitForTimeout(1200);
   const st = await state(page);
-  check(st.s > 650, `portrait: starts at Karwan Bazar via ?at= (s=${st.s?.toFixed(0)})`);
+  check(st.s > 950, `portrait: starts at Karwan Bazar via ?at= (s=${st.s?.toFixed(0)})`);
   const cdp = await page.context().newCDPSession(page);
   const tp = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
   await steerExtremes(page, 'portrait', (d) => tp('touchStart', d === 'left' ? 60 : 330, 500), () => tp('touchEnd'));

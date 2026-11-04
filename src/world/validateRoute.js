@@ -2,7 +2,14 @@
 // Pure function: used by the game at load time AND by the unit tests.
 
 // Landmark kinds with a builder in src/world/landmarks/ (keep in sync with registry.js).
-const KNOWN_LANDMARK_KINDS = ['saarc-fountain', 'farmgate-footbridge', 'farmgate-station', 'karwan-market-sheds'];
+const KNOWN_LANDMARK_KINDS = [
+  'saarc-fountain', 'farmgate-footbridge', 'metro-station', 'karwan-market-sheds',
+  'elevated-expressway', 'khamarbari', 'karwan-bazar-zone', 'sonargaon-gardens',
+];
+// Kinds that span a range of the route (s0 < s1) instead of sitting at one s.
+const RANGED_KINDS = new Set(['karwan-market-sheds', 'elevated-expressway', 'khamarbari', 'karwan-bazar-zone']);
+// Kinds that live beyond the route end (aheadOfEnd).
+const AHEAD_KINDS = new Set(['saarc-fountain', 'sonargaon-gardens']);
 
 export function validateRoute(data) {
   const errors = [];
@@ -15,6 +22,22 @@ export function validateRoute(data) {
   if (!data.title || !data.title.bn || !data.title.en) err('route.title needs bn and en');
   if (!Array.isArray(data.centerline) || data.centerline.length < 2) err('route.centerline needs at least 2 [x,z] points');
   else data.centerline.forEach((p, i) => { if (!Array.isArray(p) || p.length !== 2 || !p.every(Number.isFinite)) err(`centerline[${i}] must be [x, z] numbers`); });
+
+  // Milestone 4: geo-referencing block (real-world provenance of the centreline).
+  if (data.geo !== undefined) {
+    const geo = data.geo;
+    if (typeof geo !== 'object' || Array.isArray(geo)) err('route.geo must be an object');
+    else {
+      if (geo.datum !== undefined && geo.datum !== 'WGS84') err('route.geo.datum must be WGS84');
+      if (Array.isArray(geo.waypoints)) {
+        geo.waypoints.forEach((w, i) => {
+          if (!Number.isFinite(w.lat) || w.lat < -90 || w.lat > 90 || !Number.isFinite(w.lon) || w.lon < -180 || w.lon > 180) {
+            err(`geo.waypoints[${i}] needs a plausible lat/lon`);
+          }
+        });
+      }
+    }
+  }
 
   const sections = data.sections || {};
   const names = Object.keys(sections);
@@ -49,11 +72,43 @@ export function validateRoute(data) {
         if (!(data.palettes && data.palettes[b.palette])) err(`segment "${seg.id}": unknown palette "${b.palette}"`);
         if (!(b.height && b.height[0] <= b.height[1])) err(`segment "${seg.id}": buildings.height must be [min, max]`);
         if (!(b.width && b.width[0] <= b.width[1])) err(`segment "${seg.id}": buildings.width must be [min, max]`);
+        // Milestone 4: optional per-segment archetype weights (which building generators run here).
+        if (b.archetypes !== undefined) {
+          if (typeof b.archetypes !== 'object' || Array.isArray(b.archetypes)) {
+            err(`segment "${seg.id}": buildings.archetypes must be an object of weights`);
+          } else {
+            let sum = 0;
+            for (const [k, w] of Object.entries(b.archetypes)) {
+              if (!Number.isFinite(w) || w < 0 || w > 1) err(`segment "${seg.id}": archetype weight "${k}" must be a number 0..1`);
+              else sum += w;
+            }
+            if (Object.keys(b.archetypes).length && (sum < 0.5 || sum > 1.5)) {
+              err(`segment "${seg.id}": archetype weights should roughly sum to 1 (got ${sum.toFixed(2)})`);
+            }
+          }
+        }
       }
     });
   }
 
   if (!data.lighting) err('route.lighting is missing');
+
+  // Milestone 4: named junction records (the real corridor's cross roads).
+  if (data.junctions !== undefined) {
+    if (!Array.isArray(data.junctions)) err('route.junctions must be an array');
+    else data.junctions.forEach((j, i) => {
+      const at = `junctions[${i}]`;
+      if (typeof j.id !== 'string' || !j.id) err(`${at} needs an id`);
+      const atS = j.end === true;
+      if (!atS && !(Number.isFinite(j.s) && j.s >= 0)) err(`${at} ("${j.id}") needs s >= 0 or end: true`);
+      if (!j.name || !j.name.bn || !j.name.en) err(`${at} ("${j.id}") needs name.bn and name.en`);
+      if (!Array.isArray(j.arms) || !j.arms.length) err(`${at} ("${j.id}") needs a non-empty arms array`);
+      else j.arms.forEach((a) => { if (typeof a !== 'string' || !a) err(`${at} ("${j.id}"): arm names must be strings`); });
+      if (j.signal !== undefined && typeof j.signal !== 'boolean') err(`${at} ("${j.id}"): signal must be a boolean`);
+      const ids = data.junctions.map((x) => x.id);
+      if (ids.filter((x) => x === j.id).length > 1) err(`${at}: duplicate junction id "${j.id}"`);
+    });
+  }
 
   // Optional per-district atmosphere (Milestone 2): colours + fog density per segment id.
   if (data.moods !== undefined) {
@@ -78,19 +133,21 @@ export function validateRoute(data) {
     }
   });
 
-  // Landmarks (Milestone 2): each needs a known kind and kind-specific numeric fields.
+  // Landmarks: each needs a known kind and kind-specific numeric fields.
   if (data.landmarks !== undefined) {
     if (!Array.isArray(data.landmarks)) err('route.landmarks must be an array');
     else data.landmarks.forEach((lm, i) => {
       const at = `landmarks[${i}]`;
       if (typeof lm.id !== 'string' || !lm.id) err(`${at} needs an id`);
       if (!KNOWN_LANDMARK_KINDS.includes(lm.kind)) err(`${at} ("${lm.id}") has unknown kind "${lm.kind}"`);
-      if (lm.kind === 'saarc-fountain') {
-        if (!(Number.isFinite(lm.aheadOfEnd) && lm.aheadOfEnd >= 0)) err(`${at} ("${lm.id}") needs aheadOfEnd >= 0`);
-        if (!(Number.isFinite(lm.radius) && lm.radius > 0)) err(`${at} ("${lm.id}") needs radius > 0`);
-        if (!(Number.isFinite(lm.height) && lm.height > 0)) err(`${at} ("${lm.id}") needs height > 0`);
-      } else if (lm.kind === 'karwan-market-sheds') {
+      if (RANGED_KINDS.has(lm.kind)) {
         if (!(Number.isFinite(lm.s0) && Number.isFinite(lm.s1) && lm.s1 > lm.s0)) err(`${at} ("${lm.id}") needs s0 < s1`);
+      } else if (AHEAD_KINDS.has(lm.kind)) {
+        if (!(Number.isFinite(lm.aheadOfEnd) && lm.aheadOfEnd >= 0)) err(`${at} ("${lm.id}") needs aheadOfEnd >= 0`);
+        if (lm.kind === 'saarc-fountain') {
+          if (!(Number.isFinite(lm.radius) && lm.radius > 0)) err(`${at} ("${lm.id}") needs radius > 0`);
+          if (!(Number.isFinite(lm.height) && lm.height > 0)) err(`${at} ("${lm.id}") needs height > 0`);
+        }
       } else {
         if (!Number.isFinite(lm.s) || lm.s < 0) err(`${at} ("${lm.id}") needs s >= 0`);
       }

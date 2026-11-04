@@ -19,6 +19,10 @@ export class RouteModel {
     this.landmarks = data.landmarks || [];
     this.space = new RouteSpace(data.centerline, { spacing: 2, padStart: data.padStart ?? 60, padEnd: data.padEnd ?? 150 });
     this.length = this.space.length;
+    this.junctions = (data.junctions || []).map((j) => ({
+      ...j,
+      s: j.end === true ? this.length : j.s,
+    }));
     this.startLateral = data.start && Number.isFinite(data.start.lateral) ? data.start.lateral : -14;
     this.segments = data.segments.map((seg, i, arr) => ({
       ...seg, index: i,
@@ -74,7 +78,10 @@ export class RouteModel {
     return out;
   }
 
-  /** Buildings along both sides, generated once, deterministically (seeded by route id). */
+  /** Buildings along both sides, generated once, deterministically (seeded by route id).
+   * Milestone 4: each building also gets an ART-DIRECTED ARCHETYPE from the segment's
+   * weight table (institutional / midrise / commercial / marketBlock / halfbuilt), which
+   * ChunkBuilder uses for silhouette + facade-atlas decisions. */
   get buildings() {
     if (this._buildings) return this._buildings;
     const out = [];
@@ -98,6 +105,7 @@ export class RouteModel {
           wall: rng.pick(pal.walls),
           roof: rng.pick(pal.roofs),
           palette: b.palette,
+          archetype: pickArchetype(b.archetypes, rng),
           seed: rng.int(1, 2147483646),
         });
         s += w + rng.range(0, 0.6);
@@ -107,4 +115,18 @@ export class RouteModel {
     this._buildings = out;
     return out;
   }
+}
+
+/** Weighted deterministic archetype pick; falls back to 'midrise' when the segment has no table. */
+function pickArchetype(weights, rng) {
+  if (!weights) return 'midrise';
+  const entries = Object.entries(weights).filter(([, w]) => w > 0);
+  if (!entries.length) return 'midrise';
+  const total = entries.reduce((a, [, w]) => a + w, 0);
+  let t = rng.next() * total;
+  for (const [name, w] of entries) {
+    t -= w;
+    if (t <= 0) return name;
+  }
+  return entries[entries.length - 1][0];
 }

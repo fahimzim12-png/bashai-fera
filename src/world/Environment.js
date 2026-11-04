@@ -16,6 +16,7 @@ export class Environment {
     scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(lighting.sunColor, lighting.sunIntensity);
     const d = lighting.sunDir;
+    this._sunDir = new THREE.Vector3(d[0], d[1], d[2]).normalize();   // kept for shadow focus
     this.sun.position.set(d[0], d[1], d[2]).normalize().multiplyScalar(100);
     scene.add(this.sun);
 
@@ -106,4 +107,44 @@ export class Environment {
   }
 
   follow(cameraPosition) { this.dome.position.copy(cameraPosition); }
+
+  // ---- Milestone 4: real shadows on the high tier ------------------------------------------
+  // ONE directional shadow map with a tight ortho box that follows the player. Low/medium
+  // tiers keep the free blob decals only. Sun geometry never changes - only this map.
+  setShadows(enabled) {
+    const want = !!enabled;
+    if (this._shadowsOn === want) return;
+    this._shadowsOn = want;
+    this.sun.castShadow = want;
+    if (want && !this._shadowConfigured) {
+      this._shadowConfigured = true;
+      const s = this.sun.shadow;
+      s.mapSize.set(1024, 1024);
+      s.camera.left = -45; s.camera.right = 45;
+      s.camera.top = 45; s.camera.bottom = -45;
+      s.camera.near = 20; s.camera.far = 260;
+      s.bias = -0.0008;
+      s.normalBias = 0.6;
+    }
+    if (this._shadowTarget) {
+      this.sun.target.position.copy(this._shadowTarget);
+      this.sun.target.updateMatrixWorld();
+    }
+  }
+
+  /** Keep the shadow frustum centred on the player (cheap: two vector writes). */
+  setShadowFocus(x, y, z) {
+    if (!this._shadowTarget) {
+      this._shadowTarget = new THREE.Object3D();
+      this.scene.add(this._shadowTarget);
+      this.sun.target = this._shadowTarget;
+    }
+    this._shadowTarget.position.set(x, y, z);
+    this._shadowTarget.updateMatrixWorld();
+    this.sun.position.set(
+      this._shadowTarget.position.x + this._sunDir[0] * 100,
+      this._shadowTarget.position.y + this._sunDir[1] * 100,
+      this._shadowTarget.position.z + this._sunDir[2] * 100,
+    );
+  }
 }

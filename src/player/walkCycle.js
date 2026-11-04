@@ -39,8 +39,13 @@ export function walkPose(phase, stride = 1) {
   const elbowL = -(0.3 + Math.max(0, -sin) * 0.45) * s;
   const elbowR = -(0.3 + Math.max(0, sin) * 0.45) * s;
 
+  // Milestone 4: pelvis + shoulder-girdle rotation give the gait real weight transfer.
+  const hipYaw = sin * 0.06 * s;            // pelvis leads with the swinging leg
+  const shoulderYaw = -sin * 0.045 * s;     // shoulders counter-rotate against the pelvis
+
   return {
     thighL, thighR, shinL, shinR, armL, armR, elbowL, elbowR,
+    hipYaw, shoulderYaw,
     bobY: Math.abs(sin) * 0.035 * s,       // body rises twice per cycle (push-off)
     swayX: cos * 0.02 * s,                 // weight shifts over the passing leg
     torsoPitch: 0.07 * s,                  // slight forward lean while walking

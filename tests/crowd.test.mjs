@@ -105,7 +105,7 @@ test('poses stay within plausible joint limits', () => {
   crowd.attach({ build() {}, setCapacity() {}, hide() {}, setColours() {}, flush() {},
     writePerson(slot, pose) { poses.push({ behavior: crowd.slots[slot].p.behavior, pose }); } });
   crowd.update(400, 1 / 60);
-  crowd.update(720, 1 / 60);      // second sample inside the market district
+  crowd.update(960, 1 / 60);      // second sample inside the market district
   for (const { behavior, pose } of poses) {
     seen.add(behavior);
     for (const k of ['thighL', 'thighR', 'shinL', 'shinR', 'armL', 'armR', 'elbowL', 'elbowR', 'torsoPitch', 'rootY']) {
@@ -123,7 +123,7 @@ test('sitting poses put hips at seat height with horizontal thighs', () => {
   const poses = [];
   crowd.attach({ build() {}, setCapacity() {}, hide() {}, setColours() {}, flush() {},
     writePerson(slot, pose) { if (crowd.slots[slot].p.behavior.startsWith('sit')) poses.push(pose); } });
-  crowd.update(720, 1 / 60);      // inside Karwan Bazar where the stalls are
+  crowd.update(960, 1 / 60);      // inside Karwan Bazar where the stalls are
   assert.ok(poses.length > 0, 'sitters visible in the market');
   for (const pose of poses) {
     assert.ok(pose.rootY < -0.2, `sitter rootY ${pose.rootY} should sink to the seat`);

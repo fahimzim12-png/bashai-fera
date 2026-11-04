@@ -16,16 +16,28 @@ export const CONFIG = Object.freeze({
   camera: {
     distance: 4.6,         // metres behind the player (along the route)
     height: 2.25,          // metres above the ground
-    lookAhead: 10,         // metres ahead the camera looks at
+    lookAhead: 12,         // metres ahead the camera looks at
     lookHeight: 1.15,
     followLateral: 0.78,   // 1 = camera locks to player sideways, 0 = stays on route centre
-    damping: 6.5,
+    damping: 6.5,          // legacy damping (kept for fov/compat maths)
     near: 0.4,
     far: 800,
-    vFovBase: 60,          // preferred vertical field of view (degrees)
+    vFovBase: 58,          // preferred vertical field of view (degrees)
     hFovMin: 62,           // never narrower than this horizontally (portrait phones)
     hFovMax: 100,          // never wider than this (ultra-wide phones)
     vFovMax: 86,
+    // Milestone 4 cinematic layer:
+    springK: 26,           // position spring stiffness (critically damped)
+    lookSpringK: 60,       // look-target spring (faster than the body)
+    swayPosAmp: 0.11,      // handheld position sway (metres)
+    swayYawAmp: 0.028,     // handheld yaw sway (radians)
+    steerRoll: 0.017,      // radians of roll per unit of steering (max ~1 degree)
+    steerDrift: 0.5,       // metres of lateral camera drift per unit of steering
+    fovKick: 4,            // degrees of FOV widening at full stride
+    fovPunch: 2.5,         // degrees of near-miss FOV punch
+    revealDistance: 6.2,   // camera pulls back to this at landmark reveals
+    revealTime: 2.5,       // seconds a reveal lasts (skippable by input)
+    introTime: 3.5,        // seconds of opening dolly (skippable by input)
   },
   world: {
     chunkLength: 60,       // metres of road per streamed chunk

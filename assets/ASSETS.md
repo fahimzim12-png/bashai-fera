@@ -21,6 +21,8 @@ All world geometry is original parametric geometry generated in code. Signboards
 start-up onto a canvas atlas with the bundled Hind Siliguri font — the sign **texts** are original
 fictional shop names written for this game (no real brands), so no third-party rights apply.
 Procedural audio (M3) is synthesized at runtime with WebAudio — no recordings, no licences needed.
+Milestone 4 adds two start-up-painted texture atlases (road surfaces, dual facade variants) —
+still 100% original canvas-generated art, no third-party textures.
 
 ## Textures (files under `assets/textures/`)
 | File | Source URL | Author | Licence | Added | Derivation |
@@ -30,5 +32,6 @@ Procedural audio (M3) is synthesized at runtime with WebAudio — no recordings,
 ## Reference data
 | Item | Licence | Notes |
 |---|---|---|
-| OpenStreetMap | ODbL (attribution required) | NOT used yet. If route geometry is derived from OSM later, credit "© OpenStreetMap contributors" in the game credits. |
-| Wikipedia: SAARC Fountain (Nitun Kundu, 1985; ~9.75 m, 32 m pool; coordinates 23.749909, 90.393162) | Facts only, cited in route JSON `provenance` | Used as modelling dimensions for the landmark; no image assets taken from Wikipedia. |
+| OpenStreetMap | ODbL (attribution required) | **Milestone 4: USED.** The route centreline, junction list and landmark positions in `data/routes/farmgate-saarc.json` are fitted to real OSM geometry (extract 2026-11-04, kept for audit in `docs/route-research/`). Game credits must carry "Route geometry based on data © OpenStreetMap contributors (ODbL)". |
+| Wikipedia: SAARC Fountain (Nitun Kundu steel sculpture, ~9.75 m, 32 m pool; coordinates 23.74987, 90.39323; typically dry in recent years) | Facts only, cited in route JSON `provenance` | Used as modelling dimensions + condition reference for the landmark; no image assets taken from Wikipedia. |
+| Press reporting (The Daily Star, Prothom Alo, bdnews24): Farmgate footbridge 2023 rebuild, MRT-6 stations/details, Elevated Expressway ramps, Kawran Bazar market anatomy | Facts only, cited in route JSON `provenance` | No text or imagery reproduced; facts used as modelling ground truth. |

@@ -11,6 +11,7 @@ import { CONFIG } from '../core/Config.js';
 import { Rng, hashString } from '../core/Rng.js';
 import { lerp } from '../core/MathUtil.js';
 import { GeometryBuilder, hexToLinear, shade } from '../render/GeometryBuilder.js';
+import { ROAD_U, PATH_U, MEDIAN_U, ROAD_V_METRES, PATH_V_METRES, MEDIAN_V_METRES } from '../render/RoadAtlasUV.js';
 import { clearsBuildings } from './landmarks/registry.js';
 import { pickDesign, designUV, designSpanWidth } from './signCatalog.js';
 
@@ -34,7 +35,9 @@ export function buildChunk(route, ci) {
   const L = CONFIG.world.chunkLength, STEP = CONFIG.world.sliceStep;
   const s0 = ci * L, s1 = s0 + L;
   const ground = new GeometryBuilder();
-  const facade = new GeometryBuilder({ uv: true });
+  const pave = new GeometryBuilder({ uv: true });      // textured road/footpath/median surfaces
+  const facadeA = new GeometryBuilder({ uv: true });   // residential/midrise atlas
+  const facadeB = new GeometryBuilder({ uv: true });   // commercial/market atlas
   const signs = new GeometryBuilder({ uv: true });
   const rng = new Rng(`${route.id}:chunk:${ci}`);
   const jit = (hex, amt = 0.06) => shade(hexToLinear(hex), 1 + (rng.next() - 0.5) * amt);
@@ -49,12 +52,12 @@ export function buildChunk(route, ci) {
     frames.push(f);
   }
 
-  surfaces(ground, frames, jit);
+  surfaces(ground, pave, frames, jit);
   laneMarkings(ground, route, s0, s1);
   viaduct(ground, route, frames, s0, s1);
   poles(ground, route, s0, s1);
   lamps(ground, route, s0, s1);
-  buildings(ground, facade, signs, route, s0, s1);
+  buildings(ground, facadeA, facadeB, signs, route, s0, s1);
   stains(ground, route, s0, s1);
   clutter(ground, route, s0, s1);
   clothingStalls(ground, route, s0, s1);
@@ -62,18 +65,33 @@ export function buildChunk(route, ci) {
   crossings(ground, route, s0, s1);
   wallACUnits(ground, route, s0, s1);
 
-  return { ground: ground.finish(), facade: facade.finish(), signs: signs.finish(), ci, s0, s1 };
+  return { ground: ground.finish(), pave: pave.finish(), facade: facadeA.finish(), facadeB: facadeB.finish(), signs: signs.finish(), ci, s0, s1 };
 }
 
 // ---- road, footpaths, median --------------------------------------------------------------
-function surfaces(g, frames, jit) {
+// Milestone 4: flat surfaces go into the PAVE builder (RoadTexture atlas UVs), kerb/median
+// wall faces stay in the ground builder (plain vertex colour).
+function surfaces(g, pave, frames, jit) {
   const kerb = hexToLinear('#c9c3b7');
+  const white = hexToLinear('#ffffff');
   for (let i = 0; i < frames.length - 1; i++) {
     const A = frames[i], B = frames[i + 1];
     for (let e = 0; e < A.profile.elements.length; e++) {
       const ea = A.profile.elements[e], eb = B.profile.elements[e];
       const y = ea.height, yb = eb.height;
-      g.quad(W(A, ea.x0, y), W(B, eb.x0, yb), W(B, eb.x1, yb), W(A, ea.x1, y), jit(ea.color), { hint: UP });
+      if (ea.kind === 'ground') {
+        g.quad(W(A, ea.x0, y), W(B, eb.x0, yb), W(B, eb.x1, yb), W(A, ea.x1, y), jit(ea.color), { hint: UP });
+        continue;
+      }
+      // textured surface: atlas region by kind, u across the element, v = metres along
+      const [uA, uB] = ea.kind === 'road' ? ROAD_U : ea.kind === 'footpath' ? PATH_U : MEDIAN_U;
+      const vM = ea.kind === 'road' ? ROAD_V_METRES : ea.kind === 'footpath' ? PATH_V_METRES : MEDIAN_V_METRES;
+      const widthA = ea.x1 - ea.x0, widthB = eb.x1 - eb.x0;
+      const uv = [
+        [uA, A.s / vM], [uA, B.s / vM],
+        [uB, B.s / vM], [uB, A.s / vM],
+      ];
+      pave.quad(W(A, ea.x0, y), W(B, eb.x0, yb), W(B, eb.x1, yb), W(A, ea.x1, y), jit('#ffffff', 0.05), { hint: UP, uv });
       if (ea.kind === 'footpath') {                       // kerb face toward the road
         const roadward = (ea.x0 + ea.x1) / 2 < 0 ? 1 : -1;
         const xa = roadward > 0 ? ea.x1 : ea.x0, xb = roadward > 0 ? eb.x1 : eb.x0;
@@ -196,8 +214,14 @@ function lamps(g, route, s0, s1) {
   }
 }
 
-// ---- Buildings: facades (textured) + roofs, shopfronts, awnings, tanks, billboards ---------------
-function buildings(g, fac, sg, route, s0, s1) {
+// ---- Buildings: archetype-driven facades + roofs, shopfronts, awnings, tanks, billboards ----
+// Milestone 4: each building carries an ART-DIRECTED ARCHETYPE from the route weight tables
+// (institutional / midrise / commercial / marketBlock / halfbuilt). Archetype decides which
+// of the two facade atlases is used and what silhouette extras are built (porticos, balcony
+// rows, parapets, sign stacks, rebar + bamboo + netting on half-finished tops).
+const COMMERCIAL_ATLAS = new Set(['commercial', 'marketBlock', 'halfbuilt']);
+
+function buildings(g, fac, facB, sg, route, s0, s1) {
   const f = {};
   for (const b of route.buildings) {
     if (b.sMid < s0 || b.sMid >= s1) continue;
@@ -209,29 +233,100 @@ function buildings(g, fac, sg, route, s0, s1) {
     const prof = route.profileAt(b.sMid);
     const side = b.side;
     const front = side < 0 ? prof.frontageL : prof.frontageR;
-    const P = (ls, lat, y) => [f.x + f.fx * ls + f.rx * lat, y, f.z + f.fz * ls + f.rz * lat];
     const toRoad = [-side * f.rx, 0, -side * f.rz];
     const hw = b.w / 2, back = front + side * b.depth;
     const y1 = b.h;
     const wall = shade(hexToLinear(b.wall), 0.94 + r.next() * 0.1);
     const u0 = r.int(0, 7) / 8;
     const uv = (ls, y) => [(ls + hw) / 24 + u0, (y - 0.4) / 25.6];
+    const facT = COMMERCIAL_ATLAS.has(b.archetype) ? facB : fac;
+    const arch = b.archetype;
+    const P = (ls, lat, y) => [f.x + f.fx * ls + f.rx * lat, y, f.z + f.fz * ls + f.rz * lat];
+
+    // unfinished top floor (half-built archetype): columns + slab + rebar + netting
+    const topY = arch === 'halfbuilt' ? y1 - 3.2 : y1;
 
     // front facade above the shop band
-    fac.quad(P(-hw, front, 3.6), P(hw, front, 3.6), P(hw, front, y1), P(-hw, front, y1), wall,
-      { hint: toRoad, uv: [uv(-hw, 3.6), uv(hw, 3.6), uv(hw, y1), uv(-hw, y1)] });
+    facT.quad(P(-hw, front, 3.6), P(hw, front, 3.6), P(hw, front, topY), P(-hw, front, topY), wall,
+      { hint: toRoad, uv: [uv(-hw, 3.6), uv(hw, 3.6), uv(hw, topY), uv(-hw, topY)] });
     // the two side walls (seen through alleys / at gaps)
     for (const sg of [-1, 1]) {
       const ls = sg * hw, d = (lat) => [Math.abs(lat - front) / 24 + u0, 0];
-      fac.quad(P(ls, front, 0.4), P(ls, back, 0.4), P(ls, back, y1), P(ls, front, y1), shade(wall, 0.9),
+      facT.quad(P(ls, front, 0.4), P(ls, back, 0.4), P(ls, back, y1), P(ls, front, y1), shade(wall, 0.9),
         { hint: [sg * f.fx, 0, sg * f.fz], uv: [[d(front)[0], 0], [d(back)[0], 0], [d(back)[0], (y1 - 0.4) / 25.6], [d(front)[0], (y1 - 0.4) / 25.6]] });
     }
     // roof
     g.quad(P(-hw, front, y1), P(hw, front, y1), P(hw, back, y1), P(-hw, back, y1), hexToLinear(b.roof), { hint: UP });
     const rf = [f.fx, f.fz], rr = [f.rx, f.rz];
     const roofPt = (ls, lat) => [f.x + f.fx * ls + f.rx * lat, y1, f.z + f.fz * ls + f.rz * lat];
-    if (r.chance(0.45)) g.box(roofPt(r.range(-hw / 2, hw / 2), front + side * b.depth * 0.6), rf, rr, 1.6, 1.4, 1.6, '#3f5566', { skipBottom: true });
-    if (r.chance(0.25)) g.box(roofPt(r.range(-hw / 2, hw / 2), front + side * b.depth * 0.35), rf, rr, 3.0, 2.4, 3.0, shade(wall, 0.8), { skipBottom: true });
+    if (arch === 'halfbuilt') {
+      // top floor skeleton: corner columns + slab + rebar + bamboo + netting
+      for (const cx of [-hw + 0.2, hw - 0.2]) for (const cz of [front + side * 0.3, front + side * (b.depth - 0.3)]) {
+        g.box(P(cx, cz, topY - 0.4), rf, rr, 0.3, 3.0, 0.3, shade(wall, 0.92), { skipBottom: true });
+      }
+      g.quad(P(-hw, front, y1), P(hw, front, y1), P(hw, back, y1), P(-hw, back, y1), shade(hexToLinear(b.roof), 1.06), { hint: UP });
+      for (let k = 0; k < 5; k++) {
+        const bx = -hw + 0.5 + (k / 4) * (b.w - 1);
+        g.box(P(bx, front + side * 0.1, y1), rf, rr, 0.035, 0.7 + r.next() * 0.4, 0.035, '#6d5346', { skipBottom: true });
+      }
+      for (const bx of [-hw + 0.6, hw - 0.6]) {
+        g.box(P(bx, front + side * 0.4, topY - 0.4), rf, rr, 0.06, 3.4, 0.06, '#b8a25c', { skipBottom: true });
+      }
+      g.quad(P(-hw, front - side * 0.02, topY + 0.2), P(hw, front - side * 0.02, topY + 0.2), P(hw, front - side * 0.02, y1), P(-hw, front - side * 0.02, y1), '#7fae6b', { hint: toRoad });
+    } else if (r.chance(0.45)) {
+      g.box(roofPt(r.range(-hw / 2, hw / 2), front + side * b.depth * 0.6), rf, rr, 1.6, 1.4, 1.6, '#3f5566', { skipBottom: true });
+    }
+    if (arch !== 'halfbuilt' && r.chance(0.25)) {
+      g.box(roofPt(r.range(-hw / 2, hw / 2), front + side * b.depth * 0.35), rf, rr, 3.0, 2.4, 3.0, shade(wall, 0.8), { skipBottom: true });
+    }
+    // archetype rooftop kits
+    if (arch === 'institutional' && r.chance(0.6)) {
+      const mx = r.range(-hw / 2, hw / 2);
+      g.box(P(mx, front + side * b.depth * 0.5, y1), rf, rr, 0.07, 4.2, 0.07, '#c9c9c4', { skipBottom: true });
+      g.quad(P(mx + 0.02, front + side * b.depth * 0.5, y1 + 3.6), P(mx + 0.02, front + side * b.depth * 0.5 + 1.1, y1 + 3.6), P(mx + 0.02, front + side * b.depth * 0.5 + 1.1, y1 + 3.25), P(mx + 0.02, front + side * b.depth * 0.5, y1 + 3.25), '#2e7d4f', { hint: [rr[0], 0, rr[1]] });
+      g.quad(P(mx + 0.06, front + side * b.depth * 0.5, y1 + 3.6), P(mx + 0.06, front + side * b.depth * 0.5 + 0.55, y1 + 3.6), P(mx + 0.06, front + side * b.depth * 0.5 + 0.55, y1 + 3.4), P(mx + 0.06, front + side * b.depth * 0.5, y1 + 3.4), '#c9403a', { hint: [rr[0], 0, rr[1]] });
+    }
+    if (arch === 'midrise' && r.chance(0.4)) {
+      const ax = r.range(-hw / 2, hw / 2);
+      g.box(P(ax, front + side * b.depth * 0.5, y1), rf, rr, 0.05, 2.6, 0.05, '#4a4a4a', { skipBottom: true });
+      g.box(P(ax, front + side * b.depth * 0.5, y1 + 2.2), rf, rr, 1.3, 0.04, 0.04, '#4a4a4a', { skipBottom: true });
+      g.box(P(ax, front + side * b.depth * 0.5, y1 + 1.4), rf, rr, 0.9, 0.03, 0.03, '#4a4a4a', { skipBottom: true });
+    }
+    if (arch === 'commercial' && r.chance(0.3) && b.w > 8) {
+      const dx = r.range(-hw / 2, hw / 2);
+      g.box(P(dx, front + side * b.depth * 0.5, y1), rf, rr, 0.9, 0.12, 0.9, '#c9c4b8', { skipBottom: true });
+      g.box(P(dx, front + side * b.depth * 0.5 + 0.45, y1 + 0.35), rf, rr, 0.5, 0.5, 0.06, '#8c9298', { skipBottom: true });
+    }
+    if (arch === 'marketBlock' && r.chance(0.5)) {        // exposed rebar on the roof edge
+      for (let k = 0; k < 4; k++) {
+        const bx = -hw + 0.4 + (k / 3) * (b.w - 0.8);
+        g.box(P(bx, front + side * 0.06, y1), rf, rr, 0.03, 0.6 + r.next() * 0.3, 0.03, '#6d5346', { skipBottom: true });
+      }
+    }
+    // parapet band (institutional + commercial): a modest cornice along the front
+    if ((arch === 'institutional' || arch === 'commercial') && b.w > 8) {
+      g.box(P(0, front - side * 0.12, y1), rf, rr, b.w, 0.5, 0.24, shade(wall, 1.06), { skipBottom: true });
+    }
+    // balcony row (midrise): a few slabs with railings
+    if (arch === 'midrise' && b.floors >= 3 && r.chance(0.6)) {
+      const nb = Math.min(4, Math.max(2, Math.floor(b.floors / 2)));
+      for (let k = 0; k < nb; k++) {
+        const by = 3.6 + 3.2 * (1 + ((k * 2 + r.int(0, 1)) % Math.max(1, b.floors - 1)));
+        if (by > y1 - 1.2) continue;
+        const bw2 = r.range(2.2, Math.min(4, b.w - 1));
+        const bx0 = r.range(-hw + 0.4, hw - bw2 - 0.4);
+        g.box(P(bx0 + bw2 / 2, front - side * 0.5, by - 0.09), rf, rr, bw2, 0.14, 1.0, shade(wall, 0.96), { skipBottom: true });
+        g.box(P(bx0 + bw2 / 2, front - side * 0.98, by + 0.42), rf, rr, bw2, 0.7, 0.05, '#8c9298', { skipBottom: true });
+      }
+    }
+    // entrance portico (institutional)
+    if (arch === 'institutional' && b.w > 9) {
+      const pw = Math.min(4.5, b.w - 2);
+      for (const px of [-pw / 2, pw / 2]) {
+        g.box(P(px, front - side * 0.9, 0.4), rf, rr, 0.4, 3.2, 0.4, shade(wall, 1.02), { skipBottom: true });
+      }
+      g.box(P(0, front - side * 0.9, 3.6), rf, rr, pw + 0.8, 0.35, 2.0, shade(wall, 1.08), { skipBottom: true });
+    }
     if (r.chance(0.03 + 0.2 * Math.min(1.5, dr.billboards ?? 0.3)) && b.w > 8) {     // rooftop billboard (density by district)
       const bl = front - side * 0.3;
       const di = pickDesign(`${route.id}:bb:${side}:${b.sMid.toFixed(1)}`, 'ad', 2);
@@ -252,6 +347,17 @@ function buildings(g, fac, sg, route, s0, s1) {
       const latS = front - side * 0.04;
       sg.quad(P(-w2 / 2, latS, 3.72), P(w2 / 2, latS, 3.72), P(w2 / 2, latS, 4.26), P(-w2 / 2, latS, 4.26), '#ffffff',
         { hint: toRoad, uv: [[du[0], du[1]], [du[2], du[1]], [du[2], du[3]], [du[0], du[3]]] });
+    }
+    // marketBlock: vertical stacked signboards climbing the facade (very Karwan Bazar)
+    if (arch === 'marketBlock' && b.w > 7 && r.chance(0.55)) {
+      for (let k = 0; k < 2; k++) {
+        const di = pickDesign(`${route.id}:ms:${side}:${b.sMid.toFixed(1)}:${k}`, 'shop', 1);
+        const du = designUV(di), wS = designSpanWidth(di);
+        const sy = 5.1 + k * 1.3;
+        if (sy > topY - 0.7) continue;
+        sg.quad(P(-wS / 2, front - side * 0.06, sy), P(wS / 2, front - side * 0.06, sy), P(wS / 2, front - side * 0.06, sy + 0.6), P(-wS / 2, front - side * 0.06, sy + 0.6), '#ffffff',
+          { hint: toRoad, uv: [[du[0], du[1]], [du[2], du[1]], [du[2], du[3]], [du[0], du[3]]] });
+      }
     }
 
     // shopfronts at street level: shutters, signboards with script suggestion, awnings

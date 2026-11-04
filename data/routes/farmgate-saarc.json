@@ -1,77 +1,98 @@
 {
-  "schema": 1,
+  "schema": 2,
   "id": "farmgate-saarc",
   "title": {
     "bn": "ফার্মগেট → কারওয়ান বাজার → সার্ক ফোয়ারা",
     "en": "Farmgate → Karwan Bazar → SAARC Fountain"
   },
-  "status": "schematic",
-  "statusNote": "Milestone 1: the road layout, building placement and proportions are SCHEMATIC. Only the facts listed under provenance are sourced. Real street geometry, building heights and landmark models must be verified before this route is called accurate.",
-  "declaredLengthMeters": 1200,
+  "status": "geo-referenced",
+  "statusNote": "Milestone 4: the centreline is fitted to real OpenStreetMap geometry of Kazi Nazrul Islam Avenue (extracted 2026-11-04, see docs/route-research/). Junction list, landmark placement and sides follow the measured corridor. Building heights remain interpretive.",
+  "declaredLengthMeters": 1250,
   "start": {
     "lateral": -14.4
   },
+  "geo": {
+    "datum": "WGS84",
+    "note": "Real-world frame: +x = east, +z = north, origin 23.7525N 90.3920E. Route s=0 is the Farmgate junction centre; the corridor runs SSE (~160 degrees bearing) to the SAARC Fountain mor.",
+    "measured": "OpenStreetMap via Overpass API, 2026-11-04 (docs/route-research/digest.md)",
+    "waypoints": [
+      { "name": "Farmgate junction", "lat": 23.7590, "lon": 90.3871, "s": 0 },
+      { "name": "avenue mid-sweep", "lat": 23.7557, "lon": 90.3912, "s": 560 },
+      { "name": "Kawran Bazar metro station", "lat": 23.7517, "lon": 90.3926, "s": 1040 },
+      { "name": "SAARC Fountain mor", "lat": 23.7499, "lon": 90.3932, "s": 1250 },
+      { "name": "Sonargaon Hotel (beyond mor)", "lat": 23.7496, "lon": 90.3949, "s": 1350 }
+    ]
+  },
   "provenance": [
     {
-      "claim": "Kazi Nazrul Islam Avenue runs about 1.2 km from Farmgate, past Karwan Bazar, to the SAARC Fountain; five roads converge at the fountain.",
-      "source": "https://en.prothomalo.com/amp/story/bangladesh/Metro-Rail-meets-a-hitch-at-Karwan-Bazar"
+      "claim": "Kazi Nazrul Islam Avenue is a trunk dual carriageway (one-way sides of 3-4 lanes, maxspeed 60 where tagged) from Farmgate past Kawran Bazar; corridor Farmgate junction to SAARC mor measures ~1.25 km along the road.",
+      "source": "OpenStreetMap way names কাজী নজরুল ইসলাম সরণী/এভিনিউ (Overpass extract 2026-11-04, docs/route-research/)"
     },
     {
-      "claim": "Metro Rail construction replaced the road dividers with concrete walls between Agargaon and the SAARC Fountain, and pavement was removed near the fountain.",
-      "source": "https://en.prothomalo.com/amp/story/bangladesh/Metro-Rail-meets-a-hitch-at-Karwan-Bazar"
+      "claim": "Farmgate is a signal-controlled multi-arm junction: Mirpur Road (north and south arms), Kazi Nazrul Islam Avenue (east continuation and west arm), Green Road south, Indira Road toward Tejgaon.",
+      "source": "https://en.wikipedia.org/wiki/Farmgate + https://en.wikipedia.org/wiki/Kazi_Nazrul_Islam_Avenue"
     },
     {
-      "claim": "The SAARC Fountain is a 1985 steel sculpture by Nitun Kundu (about 9.75 m tall, 32 m diameter) at the intersection of Panthapath, Kazi Nazrul Islam Avenue and Sonargaon Road, beside the Pan Pacific Sonargaon hotel; coordinates 23.749909, 90.393162.",
-      "source": "https://en.wikipedia.org/wiki/SAARC_Fountain"
+      "claim": "The Farmgate footbridge was rebuilt and reopened 15 Oct 2023: ~63 m main span x ~6.4 m wide plus a ~21 m wing toward Holy Cross School, Louis Kahn-inspired tensile canopy, plaza with bus bay under it.",
+      "source": "https://www.thedailystar.net/news/bangladesh/news/farmgate-footbridge-reopens-3444541 + /my-dhaka/news/farmgate-footbridge-promoting-pedestrian-safety-and-urban-mobility-3450306"
     },
     {
-      "claim": "Vehicles parked on the footpath between Farmgate and the SAARC Fountain force pedestrians onto the road.",
-      "source": "https://www.thedailystar.net/node/51447"
+      "claim": "MRT-6 Farmgate station opened 5 Nov 2023 on the viaduct at the junction; viaduct height is greater at Farmgate, and one portal-frame pillar stands in the carriageway left of the median.",
+      "source": "https://en.wikipedia.org/wiki/MRT_Line_6"
     },
     {
-      "claim": "Karwan Bazar is described as Dhaka's largest retail kitchen market.",
-      "source": "https://online-d11.thedailystar.net/tags/karwan-bazar"
+      "claim": "Dhaka Elevated Expressway phase 1 (Kawla-Farmgate, opened Sep 2023) runs along the railway through Tejgaon; its ramps land just east of Farmgate (Indira Road), and an FDC-gate exit ramp near Karwan Bazar opened 20 Mar 2024.",
+      "source": "https://www.thedailystar.net/news/bangladesh/transport/news/pms-eid-gift-elevated-expressways-fdc-gate-exit-ramp-opened-3570881 + https://en.wikipedia.org/wiki/Dhaka_Elevated_Expressway"
+    },
+    {
+      "claim": "Kawran Bazar wholesale market: DNCC owns four markets (~1,789 permanent + 180 temporary shops); concrete multi-storey kitchen-market building plus tin-shed rows; wholesale runs midnight-7 am; porters carry loads in bamboo tukri baskets.",
+      "source": "https://en.wikipedia.org/wiki/Kawran_Bazar + https://www.thedailystar.net/slow-reads/unheard-voices/news/the-invisible-mintis-karwan-bazar-4236886"
+    },
+    {
+      "claim": "The Dhaka trunk railway passes the market's north-east side (Karwan Bazar level crossing is a named choke point); Tejgaon station lies just north; the elevated expressway shadows the rail line.",
+      "source": "https://www.thedailystar.net/news/bangladesh/news/dhakas-rail-link-most-country-snapped-students-block-karwan-bazar-level-crossing-3653426"
+    },
+    {
+      "claim": "Verified Kawran Bazar skyline: BDBL Bhaban (18 floors), BSEC Bhaban (RTV HQ), ETV/NTV/ATN studios, TCB Bhaban, Jahangir Tower; a 17th-century three-domed Mughal mosque stands on a raised platform in the market.",
+      "source": "https://en.wikipedia.org/wiki/Kawran_Bazar + https://www.thedailystar.net/news/bangladesh/news/karwan-bazars-mughal-era-mosque-echoes-dhakas-rich-past-4024081"
+    },
+    {
+      "claim": "Kawran Bazar metro station opened 31 Dec 2023; its gates carry printed signs banning raw fish, meat and vegetables because shoppers haul produce through the station.",
+      "source": "https://www.thedailystar.net/news/bangladesh/transport/news/metro-rail-now-stops-shahbagh-karwan-bazar-stations-3507041"
+    },
+    {
+      "claim": "The SAARC Fountain is a Nitun Kundu welded-steel sculpture (about 9.75 m tall, 32 m pool) on an RCC basin at the Kawran Bazar/Sonargaon crossing in front of Pan Pacific Sonargaon; long neglected, cracked in 2022, typically dry behind tin fencing plastered with posters.",
+      "source": "https://en.wikipedia.org/wiki/SAARC_Fountain + https://en.wikipedia.org/wiki/Nitun_Kundu + Bangla Tribune 2022 crack report"
+    },
+    {
+      "claim": "MRT-6 viaduct: median columns with hammerhead caps, precast segmental girders, ~20-25 m pier spacing, 1500 V DC overhead catenary; stations are ~180 m long, three-level, brand green #006747.",
+      "source": "https://en.wikipedia.org/wiki/MRT_Line_6 (infobox + station design)"
+    },
+    {
+      "claim": "Vehicles parked on the footpath between Farmgate and the SAARC Fountain force pedestrians onto the road; staff buses park all day along the Karwan Bazar-FDC road.",
+      "source": "https://www.thedailystar.net/node/51447 + https://www.thedailystar.net/news/bangladesh/news/illegal-parking-turns-karwan-bazar-nightmare-3822066"
     }
   ],
   "centerline": [
-    [
-      0,
-      0
-    ],
-    [
-      160,
-      -45
-    ],
-    [
-      340,
-      -120
-    ],
-    [
-      540,
-      -185
-    ],
-    [
-      740,
-      -215
-    ],
-    [
-      950,
-      -228
-    ],
-    [
-      1160,
-      -205
-    ]
+    [0, 0],
+    [20, -56],
+    [55, -133],
+    [122, -319],
+    [209, -548],
+    [312, -823],
+    [375, -987],
+    [418, -1093],
+    [447, -1160]
   ],
   "palettes": {
     "midrise_mixed": {
       "walls": [
-        "#c9b8a0",
+        "#d8ccaf",
         "#b5a28c",
-        "#d0c5b4",
+        "#c9c2b4",
         "#a8b3b8",
         "#c7a89a",
-        "#b7bf9f",
+        "#b9c4ad",
         "#cfd0c8",
         "#d8c6a5",
         "#c2917b"
@@ -177,50 +198,50 @@
   "moods": {
     "note": "Per-district atmosphere deltas applied on top of the global lighting. fog/hemiGround are colours, density scales fog distance (higher = thicker air). Blended across segment boundaries.",
     "farmgate": {
-      "fog": "#e8c9a2",
-      "hemiGround": "#8a7a66",
+      "fog": "#e3cdb0",
+      "hemiGround": "#8f8272",
       "density": 1.0
     },
-    "avenue-west": {
-      "fog": "#e6c6a0",
-      "hemiGround": "#8b7c68",
+    "avenue-corridor": {
+      "fog": "#e0c9ac",
+      "hemiGround": "#908371",
       "density": 1.04
     },
     "karwan-bazar": {
-      "fog": "#dcc4a0",
+      "fog": "#d9c4a4",
       "hemiGround": "#95856d",
       "density": 1.18
     },
     "saarc-approach": {
-      "fog": "#eed3ae",
+      "fog": "#e8d4b4",
       "hemiGround": "#91847a",
       "density": 0.9
     }
   },
   "sections": {
     "avenue_metro": {
-      "note": "Dual carriageway with a median carrying the Metro Rail viaduct. Walkable area = left footpath + the carriageway beside it (the median wall blocks crossing for now).",
+      "note": "Dual carriageway (3 lanes each way, as mapped on OSM) with a median carrying the MRT-6 viaduct. Pave texture (RoadTexture atlas) carries the asphalt/footpath detail; vertex colours are neutral tints. Walkable = left footpath + the carriageway beside it.",
       "elements": [
         {
           "kind": "ground",
           "x0": -60.0,
           "x1": -16.1,
           "height": 0.0,
-          "color": "#8a8478"
+          "color": "#87816f"
         },
         {
           "kind": "footpath",
           "x0": -16.1,
           "x1": -12.6,
           "height": 0.18,
-          "color": "#b9b2a6"
+          "color": "#ffffff"
         },
         {
           "kind": "road",
           "x0": -12.6,
           "x1": -3.0,
           "height": 0.0,
-          "color": "#3c3e42",
+          "color": "#ffffff",
           "lanes": 3
         },
         {
@@ -228,7 +249,7 @@
           "x0": -3.0,
           "x1": 3.0,
           "height": 0.55,
-          "color": "#9c978c",
+          "color": "#ffffff",
           "viaduct": {
             "width": 8.4,
             "bottom": 9.2,
@@ -240,7 +261,7 @@
           "x0": 3.0,
           "x1": 12.6,
           "height": 0.0,
-          "color": "#3c3e42",
+          "color": "#ffffff",
           "lanes": 3
         },
         {
@@ -248,14 +269,14 @@
           "x0": 12.6,
           "x1": 16.1,
           "height": 0.18,
-          "color": "#b9b2a6"
+          "color": "#ffffff"
         },
         {
           "kind": "ground",
           "x0": 16.1,
           "x1": 60.0,
           "height": 0.0,
-          "color": "#8a8478"
+          "color": "#87816f"
         }
       ],
       "frontage": {
@@ -268,28 +289,28 @@
       ]
     },
     "avenue_narrow": {
-      "note": "Karwan Bazar stretch: narrower, crowded footpaths (design interpretation of the sourced footpath-encroachment reports).",
+      "note": "Kawran Bazar stretch: narrower, crowded footpath on the market side (sourced footpath-encroachment reports).",
       "elements": [
         {
           "kind": "ground",
           "x0": -60.0,
           "x1": -16.1,
           "height": 0.0,
-          "color": "#8a8478"
+          "color": "#87816f"
         },
         {
           "kind": "footpath",
           "x0": -16.1,
           "x1": -13.7,
           "height": 0.18,
-          "color": "#aaa296"
+          "color": "#ffffff"
         },
         {
           "kind": "road",
           "x0": -13.7,
           "x1": -3.0,
           "height": 0.0,
-          "color": "#3a3c40",
+          "color": "#ffffff",
           "lanes": 3
         },
         {
@@ -297,7 +318,7 @@
           "x0": -3.0,
           "x1": 3.0,
           "height": 0.55,
-          "color": "#9c978c",
+          "color": "#ffffff",
           "viaduct": {
             "width": 8.4,
             "bottom": 9.2,
@@ -309,7 +330,7 @@
           "x0": 3.0,
           "x1": 13.7,
           "height": 0.0,
-          "color": "#3a3c40",
+          "color": "#ffffff",
           "lanes": 3
         },
         {
@@ -317,14 +338,14 @@
           "x0": 13.7,
           "x1": 16.1,
           "height": 0.18,
-          "color": "#aaa296"
+          "color": "#ffffff"
         },
         {
           "kind": "ground",
           "x0": 16.1,
           "x1": 60.0,
           "height": 0.0,
-          "color": "#8a8478"
+          "color": "#87816f"
         }
       ],
       "frontage": {
@@ -337,28 +358,28 @@
       ]
     },
     "saarc_approach": {
-      "note": "Approach to the SAARC Fountain junction: wider carriageway, wider median, taller buildings.",
+      "note": "Approach to the SAARC Fountain mor: wider carriageway, wider median, taller buildings.",
       "elements": [
         {
           "kind": "ground",
           "x0": -60.0,
           "x1": -17.0,
           "height": 0.0,
-          "color": "#8a8478"
+          "color": "#87816f"
         },
         {
           "kind": "footpath",
           "x0": -17.0,
           "x1": -14.5,
           "height": 0.18,
-          "color": "#b0a99d"
+          "color": "#ffffff"
         },
         {
           "kind": "road",
           "x0": -14.5,
           "x1": -4.0,
           "height": 0.0,
-          "color": "#3c3e42",
+          "color": "#ffffff",
           "lanes": 3
         },
         {
@@ -366,7 +387,7 @@
           "x0": -4.0,
           "x1": 4.0,
           "height": 0.55,
-          "color": "#9c978c",
+          "color": "#ffffff",
           "viaduct": {
             "width": 8.4,
             "bottom": 9.2,
@@ -378,7 +399,7 @@
           "x0": 4.0,
           "x1": 14.5,
           "height": 0.0,
-          "color": "#3c3e42",
+          "color": "#ffffff",
           "lanes": 3
         },
         {
@@ -386,14 +407,14 @@
           "x0": 14.5,
           "x1": 17.0,
           "height": 0.18,
-          "color": "#b0a99d"
+          "color": "#ffffff"
         },
         {
           "kind": "ground",
           "x0": 17.0,
           "x1": 60.0,
           "height": 0.0,
-          "color": "#8a8478"
+          "color": "#87816f"
         }
       ],
       "frontage": {
@@ -406,6 +427,48 @@
       ]
     }
   },
+  "junctions": [
+    {
+      "id": "farmgate",
+      "s": 0,
+      "name": { "bn": "ফার্মগেট মোড়", "en": "Farmgate junction" },
+      "arms": ["mirpur-north", "mirpur-south", "kazi-nazrul-west", "green-road", "indira-road"],
+      "signal": true,
+      "note": "Signal-controlled 5-arm crossing where the game's walk begins; footbridge + metro station + expressway ramp all cluster here."
+    },
+    {
+      "id": "khamarbari",
+      "s": 150,
+      "name": { "bn": "খামারবাড়ি", "en": "Khamarbari" },
+      "arms": ["khamarbari-sarak"],
+      "signal": false,
+      "note": "Government agriculture complex on the left (east) side; expressway traffic turns here onto the avenue."
+    },
+    {
+      "id": "tejgaon-link",
+      "s": 420,
+      "name": { "bn": "তেজগাঁও লিংক", "en": "Tejgaon service link" },
+      "arms": ["service-road-east"],
+      "signal": false,
+      "note": "Minor service arm on the left toward the rail corridor."
+    },
+    {
+      "id": "karwan-bazar-mor",
+      "s": 1060,
+      "name": { "bn": "কারওয়ান বাজার মোড়", "en": "Karwan Bazar crossing" },
+      "arms": ["fdc-road", "rail-level-crossing"],
+      "signal": true,
+      "note": "Roundabout-signal at the market edge where the FDC road and the rail level crossing meet the avenue."
+    },
+    {
+      "id": "saarc-mor",
+      "end": true,
+      "name": { "bn": "সার্ক ফোয়ারা মোড়", "en": "SAARC Fountain mor" },
+      "arms": ["panthapath", "bijoy-sarani", "sonargaon-road"],
+      "signal": true,
+      "note": "The destination: traffic circle around the Nitun Kundu fountain; Panthapath, Bijoy Sarani and Sonargaon Road all meet here."
+    }
+  ],
   "segments": [
     {
       "id": "farmgate",
@@ -417,32 +480,24 @@
       "section": "avenue_metro",
       "buildings": {
         "palette": "midrise_mixed",
-        "height": [
-          14,
-          40
-        ],
-        "width": [
-          8,
-          15
-        ],
-        "depth": [
-          14,
-          24
-        ],
-        "gapChance": 0.05
+        "height": [14, 40],
+        "width": [8, 15],
+        "depth": [14, 24],
+        "gapChance": 0.05,
+        "archetypes": { "midrise": 0.5, "commercial": 0.32, "institutional": 0.08, "halfbuilt": 0.1 }
       },
       "dressing": {
         "cables": 1.6,
         "billboards": 0.5,
-        "stalls": 0.7,
+        "stalls": 0.8,
         "stains": 0.12,
         "crowd": 1.25,
-        "cloth": 1.0
+        "cloth": 0.7
       }
     },
     {
-      "id": "avenue-west",
-      "s0": 300,
+      "id": "avenue-corridor",
+      "s0": 380,
       "name": {
         "bn": "কাজী নজরুল ইসলাম এভিনিউ",
         "en": "Kazi Nazrul Islam Avenue"
@@ -450,24 +505,16 @@
       "section": "avenue_metro",
       "buildings": {
         "palette": "midrise_mixed",
-        "height": [
-          12,
-          36
-        ],
-        "width": [
-          8,
-          16
-        ],
-        "depth": [
-          14,
-          24
-        ],
-        "gapChance": 0.08
+        "height": [12, 36],
+        "width": [8, 16],
+        "depth": [14, 24],
+        "gapChance": 0.08,
+        "archetypes": { "midrise": 0.42, "commercial": 0.34, "institutional": 0.12, "halfbuilt": 0.12 }
       },
       "dressing": {
         "cables": 1.0,
         "billboards": 0.35,
-        "stalls": 0.3,
+        "stalls": 0.35,
         "stains": 0.08,
         "crowd": 0.85,
         "cloth": 0.35
@@ -475,7 +522,7 @@
     },
     {
       "id": "karwan-bazar",
-      "s0": 620,
+      "s0": 880,
       "name": {
         "bn": "কারওয়ান বাজার",
         "en": "Karwan Bazar"
@@ -483,24 +530,16 @@
       "section": "avenue_narrow",
       "buildings": {
         "palette": "market_low",
-        "height": [
-          8,
-          22
-        ],
-        "width": [
-          6,
-          12
-        ],
-        "depth": [
-          12,
-          20
-        ],
-        "gapChance": 0.12
+        "height": [8, 22],
+        "width": [6, 12],
+        "depth": [12, 20],
+        "gapChance": 0.12,
+        "archetypes": { "marketBlock": 0.4, "midrise": 0.2, "commercial": 0.28, "halfbuilt": 0.12 }
       },
       "dressing": {
         "cables": 1.2,
         "billboards": 0.12,
-        "stalls": 0.9,
+        "stalls": 0.95,
         "stains": 0.85,
         "crowd": 1.4,
         "cloth": 1.35
@@ -508,7 +547,7 @@
     },
     {
       "id": "saarc-approach",
-      "s0": 990,
+      "s0": 1190,
       "name": {
         "bn": "সার্ক ফোয়ারার পথে",
         "en": "Towards the SAARC Fountain"
@@ -516,19 +555,11 @@
       "section": "saarc_approach",
       "buildings": {
         "palette": "towers_mixed",
-        "height": [
-          18,
-          46
-        ],
-        "width": [
-          10,
-          18
-        ],
-        "depth": [
-          16,
-          26
-        ],
-        "gapChance": 0.04
+        "height": [18, 46],
+        "width": [10, 18],
+        "depth": [16, 26],
+        "gapChance": 0.04,
+        "archetypes": { "commercial": 0.5, "midrise": 0.22, "institutional": 0.08, "halfbuilt": 0.2 }
       },
       "dressing": {
         "cables": 0.7,
@@ -542,68 +573,115 @@
   ],
   "landmarks": [
     {
-      "id": "saarc-fountain",
-      "kind": "saarc-fountain",
-      "status": "scenery-v1",
-      "note": "Static homage to Nitun Kundu's 1985 steel fan sculpture at the five-road junction (sourced size: 32 m pool, 9.75 m tall). Blades, frozen water, plaza. No interaction, no animation.",
-      "aheadOfEnd": 22,
-      "radius": 16,
-      "height": 9.75,
-      "cull": 400
-    },
-    {
       "id": "farmgate-footbridge",
       "kind": "farmgate-footbridge",
-      "status": "scenery-v1",
-      "note": "Twin-arch pedestrian footbridge over the junction; deck walks above the metro viaduct. Static scenery; nearby plots are cleared (junction plaza).",
-      "s": 45,
+      "status": "geo-referenced-v2",
+      "note": "The 2023 BBA footbridge: ~63 m main span across Mirpur Road/junction (6.4 m wide deck) + ~21 m wing toward Holy Cross along the avenue, Louis Kahn-inspired mast-and-tensile canopy, cantilever viewing pockets with planters, plaza with bus bay and police box below. Static scenery; junction plots are cleared.",
+      "s": 8,
       "deckY": 12.4,
-      "span": 33,
-      "clears": [
-        30,
-        60
-      ],
+      "span": 63,
+      "wingLen": 21,
+      "clears": [0, 46],
       "side": 0,
-      "cull": 280
+      "cull": 300
     },
     {
       "id": "farmgate-station",
-      "kind": "farmgate-station",
-      "status": "scenery-v1",
-      "note": "MRT-6 style elevated station box on the viaduct: teal band, glazed platform, roof canopy, median columns, footpath access towers. Static scenery.",
-      "s": 180,
-      "length": 64,
-      "cull": 340
+      "kind": "metro-station",
+      "status": "geo-referenced-v2",
+      "note": "MRT-6 Farmgate station (opened 5 Nov 2023): three-level elevated box on the viaduct, brand-green bands, glazed platform, readable station nameboard, median columns, the odd portal-frame pillar in the carriageway, footpath access towers.",
+      "s": 65,
+      "length": 90,
+      "name": { "bn": "ফার্মগেট", "en": "FARMGATE" },
+      "cull": 360
+    },
+    {
+      "id": "farmgate-expressway",
+      "kind": "elevated-expressway",
+      "status": "geo-referenced-v2",
+      "note": "Dhaka Elevated Expressway phase 1: mainline deck along the rail side (left/east) with a ramp descending to the Indira Road landing east of the junction.",
+      "s": 170,
+      "s0": 30,
+      "s1": 330,
+      "side": -1,
+      "deckY": 17,
+      "cull": 440
+    },
+    {
+      "id": "khamarbari",
+      "kind": "khamarbari",
+      "status": "geo-referenced-v2",
+      "note": "Khamarbari government agriculture complex on the left: institutional blocks with flag masts, hoarding fence, Shahid Anwara Udyan park remnant with DMTCL site containers.",
+      "s": 170,
+      "s0": 40,
+      "s1": 300,
+      "side": -1,
+      "clears": [40, 300],
+      "cull": 380
     },
     {
       "id": "karwan-market-west",
       "kind": "karwan-market-sheds",
-      "status": "scenery-v1",
-      "note": "Wholesale kitchen market shed row on the side away from the walkable footpath; generated buildings are cleared for it. Static scenery.",
-      "s": 732,
-      "s0": 645,
-      "s1": 820,
-      "side": 1,
-      "clears": [
-        645,
-        820
-      ],
-      "cull": 300
+      "status": "geo-referenced-v2",
+      "note": "Kawran Bazar wholesale sheds, west row: gabled tin sheds with produce strips on the LEFT (market) side - the real market sits on the east side of the avenue.",
+      "s": 960,
+      "s0": 880,
+      "s1": 1030,
+      "side": -1,
+      "clears": [880, 1030],
+      "cull": 320
     },
     {
       "id": "karwan-market-east",
       "kind": "karwan-market-sheds",
-      "status": "scenery-v1",
-      "note": "Second shed row continuing the market to the SAARC approach.",
-      "s": 907,
-      "s0": 820,
-      "s1": 995,
-      "side": 1,
-      "clears": [
-        820,
-        995
-      ],
-      "cull": 300
+      "status": "geo-referenced-v2",
+      "note": "Second shed row continuing to the mor approach.",
+      "s": 1105,
+      "s0": 1030,
+      "s1": 1180,
+      "side": -1,
+      "clears": [1030, 1180],
+      "cull": 320
+    },
+    {
+      "id": "karwan-bazar-zone",
+      "kind": "karwan-bazar-zone",
+      "status": "geo-referenced-v2",
+      "note": "Behind the sheds: DNCC concrete kitchen-market block, fish market strip, parked staff buses, the trunk railway with the Karwan Bazar level crossing, expressway mainline + FDC ramp, the three-domed Mughal mosque, FDC compound with its 12-storey skeleton, and the BDBL/BSEC tower backdrop.",
+      "s": 1035,
+      "s0": 870,
+      "s1": 1210,
+      "side": -1,
+      "cull": 520
+    },
+    {
+      "id": "karwan-station",
+      "kind": "metro-station",
+      "status": "geo-referenced-v2",
+      "note": "MRT-6 Kawran Bazar station (opened 31 Dec 2023), same station architecture as Farmgate, its own nameboard.",
+      "s": 1040,
+      "length": 90,
+      "name": { "bn": "কাওরান বাজার", "en": "KAWRAN BAZAR" },
+      "cull": 360
+    },
+    {
+      "id": "saarc-fountain",
+      "kind": "saarc-fountain",
+      "status": "geo-referenced-v2",
+      "note": "The Nitun Kundu steel petal fountain (~9.75 m, 32 m pool) at the mor: RCC pool typically dry in recent years, tin fence ring plastered with posters, lamp ring. Static scenery, no interaction.",
+      "aheadOfEnd": 8,
+      "radius": 16,
+      "height": 9.75,
+      "cull": 440
+    },
+    {
+      "id": "sonargaon-gardens",
+      "kind": "sonargaon-gardens",
+      "status": "geo-referenced-v2",
+      "note": "Beyond the mor: the Sonargaon hotel's 8-acre garden grounds - lawns, tree clusters, perimeter wall, low-wide hotel block set back in green.",
+      "aheadOfEnd": 95,
+      "side": -1,
+      "cull": 520
     }
   ],
   "progressMarks": [
@@ -630,19 +708,16 @@
     }
   ],
   "lighting": {
-    "note": "Late afternoon: the father promised to be home before evening.",
-    "skyTop": "#7fa9d0",
-    "skyHorizon": "#f2c48e",
-    "fog": "#e8c9a2",
-    "sunColor": "#ffd7a1",
-    "sunDir": [
-      -0.45,
-      0.5,
-      0.35
-    ],
-    "sunIntensity": 2.4,
-    "hemiSky": "#bcd3ea",
-    "hemiGround": "#8a7a66",
-    "hemiIntensity": 1.5
+    "note": "Late dry-season afternoon: hazy Dhaka light, the father promised to be home before evening. Palette follows the M4 photo research (dust-haze sky, warm sun, desaturated ground).",
+    "skyTop": "#8fb0c8",
+    "skyHorizon": "#e8d2ae",
+    "fog": "#e3cdb0",
+    "sunColor": "#ffe3b8",
+    "sunDir": [-0.45, 0.5, 0.35],
+    "sunIntensity": 2.2,
+    "hemiSky": "#c2d3e2",
+    "hemiGround": "#8f8272",
+    "hemiIntensity": 1.5,
+    "exposure": 1.12
   }
 }

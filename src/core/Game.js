@@ -25,7 +25,9 @@ import { probeGpu, createRenderer } from '../render/RendererFactory.js';
 import { QualityManager } from '../render/QualityManager.js';
 import { detectProfile, chooseTier, TIERS } from '../render/tiers.js';
 import { createFacadeTexture } from '../render/FacadeTexture.js';
+import { createRoadTexture } from '../render/RoadTexture.js';
 import { createSignAtlas } from '../render/SignAtlasTexture.js';
+import { blobMaterial } from '../render/BlobShadow.js';
 import { Hud } from '../ui/Hud.js';
 import { Overlays } from '../ui/Overlays.js';
 import { DebugOverlay } from '../debug/DebugOverlay.js';
@@ -93,10 +95,12 @@ export class Game {
     this.scene = new THREE.Scene();
     this.env = new Environment(this.scene, this.route.lighting);
     const groundMat = new THREE.MeshLambertMaterial({ vertexColors: true });
-    const facadeMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: createFacadeTexture() });
+    const paveMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: createRoadTexture() });
+    const facadeMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: createFacadeTexture('residential') });
+    const facadeBMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: createFacadeTexture('commercial') });
     const signMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: signAtlas.texture });
-    this.chunks = new ChunkManager({ scene: this.scene, route: this.route, groundMaterial: groundMat, facadeMaterial: facadeMat, signMaterial: signMat, aheadChunks: this.quality.tier.aheadChunks });
-    this.landmarks = new LandmarkManager({ scene: this.scene, route: this.route, material: groundMat });
+    this.chunks = new ChunkManager({ scene: this.scene, route: this.route, groundMaterial: groundMat, paveMaterial: paveMat, facadeMaterial: facadeMat, facadeBMaterial: facadeBMat, signMaterial: signMat, aheadChunks: this.quality.tier.aheadChunks });
+    this.landmarks = new LandmarkManager({ scene: this.scene, route: this.route, material: groundMat, signMaterial: signMat });
     this.traffic = new TrafficSystem({ route: this.route, bus: this.bus });
     this.traffic.attach(new TrafficRenderer({ scene: this.scene, material: groundMat, system: this.traffic }));
     this.crowd = new CrowdSystem({ route: this.route, bus: this.bus });
@@ -104,6 +108,10 @@ export class Game {
     if (this.params.audio !== '0') this.audio = new AudioEngine(this.bus);
     this.avatar = new PlayerAvatar(groundMat);
     this.scene.add(this.avatar.root);
+    // contact shadow under the hero (blob decal; the real shadow map is high-tier only)
+    this.avatarBlob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), blobMaterial());
+    this.avatarBlob.renderOrder = 2;
+    this.scene.add(this.avatarBlob);
 
     // 4) gameplay systems
     this.startS = Math.max(0, Math.min(this.params.at || 0, this.route.length - 5));
@@ -159,6 +167,7 @@ export class Game {
       playing: {
         enter: () => {
           ui.hideAll(); hud.show(true); this.input.reset();
+          if (!this._introPlayed) { this._introPlayed = true; this.cameraRig.playIntro(); }
           if (this.audio) { this.audio.start(); this.audio.duck(false); }
           this.wake.acquire(); this.quality.resetClock(); this.loop.resetTime();
           const touch = this.input.device === 'touch' || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
@@ -196,6 +205,7 @@ export class Game {
     bus.on('traffic:nearmiss', (e) => {
       this.avatar.nudge(e.strength, e.side);
       this.cameraRig.addShake(e.strength * 0.45);
+      this.cameraRig.punch(e.strength);
     });
     bus.on('traffic:horn', (e) => {
       if (!this.audio) return;
@@ -233,6 +243,7 @@ export class Game {
     const t = this.quality.tier;
     this.chunks.aheadChunks = t.aheadChunks;
     this.env.setViewDistance(t.aheadChunks * CONFIG.world.chunkLength - 20);
+    this.env.setShadows(t.shadows);
     if (this.traffic) this.traffic.setTier(t);
     if (this.crowd) this.crowd.setTier(t);
     this.dirty = true;
@@ -267,16 +278,18 @@ export class Game {
     if (this.contextLost) return;
     const route = this.route, p = this.player.interpolate(alpha, this._p);
 
-    if (active) this.cameraRig.update(p, dt);
+    if (active) this.cameraRig.update(p, dt, { steer: this.input ? this.input.steer : 0 });
     route.space.toWorld(p.s, p.x, this._w);
     this.avatar.setPose(this._w.x, this._w.z, Math.atan2(this._w.fx, this._w.fz), p.phase,
       p.vx / CONFIG.player.lateralMaxSpeed, { dt, stride: active ? 1 : 0 });
+    this.avatarBlob.position.set(this._w.x, 0.025, this._w.z);
     if (active) this.chunks.update(p.s);
     this.landmarks.update(p.s);
     if (active) this.traffic.update(p.s, p.x, dt);
     this.crowd.update(p.s, active ? dt : 0);
     if (this.audio && active) this.audio.update(p.s, route.length, this.crowd.stats.visible / this.crowd.capacity, dt);
     this.env.updateAt(p.s, route);
+    this.env.setShadowFocus(this._w.x, 0, this._w.z);
     this.env.follow(this.cameraRig.camera.position);
     this.renderer.render(this.scene, this.cameraRig.camera);
     this.dirty = false;

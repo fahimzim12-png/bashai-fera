@@ -3,6 +3,7 @@
 // space; this class composes joint matrices and per-instance clothing colours.
 import * as THREE from 'three';
 import { toBufferGeometry } from '../render/GeometryUtil.js';
+import { createBlobInstancedMesh } from '../render/BlobShadow.js';
 import { buildCrowdGeometries, CROWD_JOINTS, CROWD_PARTS } from './characterKit.js';
 
 // Parts that have a left and a right instance per person (slot*2, slot*2+1).
@@ -23,6 +24,7 @@ export class CrowdRenderer {
       scene.add(mesh);
       this.meshes[part] = mesh;
     }
+    this.blob = createBlobInstancedMesh(scene, cap);     // contact shadows under people
     this._m = new THREE.Matrix4(); this._qY = new THREE.Quaternion();
     this._qX = new THREE.Quaternion(); this._q = new THREE.Quaternion();
     this._v = new THREE.Vector3(); this._j = new THREE.Vector3();
@@ -41,6 +43,7 @@ export class CrowdRenderer {
         mesh.setMatrixAt(slot * 2 + 1, this._m.compose(this._v.set(0, -60, 0), this._q.identity(), this._zero));
       } else mesh.setMatrixAt(slot, this._m.compose(this._v.set(0, -60, 0), this._q.identity(), this._zero));
     }
+    if (this.blob) this.blob.setMatrixAt(slot, this._m.compose(this._v.set(0, -60, 0), this._q.identity(), this._zero));
   }
 
   hide(slot) { this._hideAll(slot); this.flush(); }
@@ -78,6 +81,10 @@ export class CrowdRenderer {
   /** Compose every body part of one person. pose keys: see CrowdSystem. */
   writePerson(slot, pose, x, z, yaw, scale, variant) {
     const J = CROWD_JOINTS, rY = pose.rootY || 0;
+    if (this.blob) {
+      this._m.compose(this._v.set(x, 0.02, z), this._qY.identity(), this._j.set(1.15 * scale, 1, 0.85 * scale));
+      this.blob.setMatrixAt(slot, this._m);
+    }
     const head = this.meshes[variant], other = this.meshes[variant === 'headA' ? 'headB' : 'headA'];
     this._qY.setFromAxisAngle(this._up, yaw + (pose.headYaw || 0));
     this._j.set(0, J.neck[1] * scale + rY, 0);
@@ -98,5 +105,6 @@ export class CrowdRenderer {
 
   flush() {
     for (const part of CROWD_PARTS) this.meshes[part].instanceMatrix.needsUpdate = true;
+    if (this.blob) this.blob.instanceMatrix.needsUpdate = true;
   }
 }

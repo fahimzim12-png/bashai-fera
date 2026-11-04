@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { walkPose, idlePose, blendPose } from '../src/player/walkCycle.js';
 
 const KEYS = ['thighL', 'thighR', 'shinL', 'shinR', 'armL', 'armR', 'elbowL', 'elbowR',
-  'bobY', 'swayX', 'torsoPitch', 'torsoRoll', 'headYaw', 'headPitch'];
+  'hipYaw', 'shoulderYaw', 'bobY', 'swayX', 'torsoPitch', 'torsoRoll', 'headYaw', 'headPitch'];
 
 test('walkPose is continuous across the phase wrap', () => {
   const a = walkPose(0.9999999, 1);

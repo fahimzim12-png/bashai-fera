@@ -1,17 +1,18 @@
-// Draws ONE small window-pattern texture at start-up (no image download needed).
-// Milestone 2: 512 px, 8x8 window bays (24 m x 25.6 m of wall) with ten bay archetypes
-// (lit, curtained, balcony grille, laundry balcony, AC cluster, shuttered, brick patch...)
-// so two buildings of the same wall colour no longer look like twins.
-// The texture stays near-white so each building's own wall colour tints it.
+// Draws facade window-pattern textures at start-up (no image download needed).
+// Milestone 4: TWO art-directed 512 px variants (8x8 window bays each), chosen per building
+// by its archetype — 'residential' (mosaic plaster, laundries, grilles, brick patches, AC)
+// and 'commercial' (mirror glass bands, AC clusters, tin + rust, shutters). Both stay
+// near-white so each building's own wall colour tints them.
 import * as THREE from 'three';
 import { Rng } from '../core/Rng.js';
 
-export function createFacadeTexture() {
+export function createFacadeTexture(variant = 'residential') {
   const size = 512, cell = 64, n = 8;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d');
-  const rng = new Rng('facade-v2');
+  const comm = variant === 'commercial';
+  const rng = new Rng(comm ? 'facade-m4-commercial' : 'facade-m4-residential');
   const CLOTH = ['#d94f3f', '#3fa0d9', '#e8e3d2', '#4fae6b', '#e2b23f', '#c56da0'];
 
   ctx.fillStyle = '#ffffff';
@@ -46,7 +47,36 @@ export function createFacadeTexture() {
       ctx.beginPath(); ctx.moveTo(x + 10, y + 30); ctx.lineTo(x + 54, y + 30); ctx.stroke();
     };
 
-    if (roll < 0.09) {                                   // lit at dusk
+    if (comm) {
+      // commercial variant: mirror glass, AC clusters, shutters, tin + rust, weathered banding
+      if (roll < 0.34) {                                   // mirror glass band
+        const g = ctx.createLinearGradient(0, wy, 0, wy + wh);
+        g.addColorStop(0, '#5d768c'); g.addColorStop(0.5, '#2c3b4b'); g.addColorStop(1, '#71879a');
+        ctx.fillStyle = g; ctx.fillRect(wx, wy, ww, wh);
+        ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fillRect(wx + 4, wy + 4, ww - 20, 7);
+        frameSill();
+      } else if (roll < 0.52) {                            // AC cluster + small windows
+        ctx.fillStyle = '#2c3b4b'; ctx.fillRect(wx + 4, wy + 4, 18, 14); ctx.fillRect(wx + 4, wy + 22, 18, 12);
+        ctx.fillStyle = '#d7d7d2'; ctx.fillRect(wx + 30, wy + 8, 22, 15);
+        ctx.fillStyle = '#9a9a96'; ctx.fillRect(wx + 33, wy + 13, 16, 5);
+        ctx.fillStyle = 'rgba(50,45,40,0.12)'; ctx.fillRect(wx + 32, wy + 23, 16, 11);
+        frameSill();
+      } else if (roll < 0.64) {                            // roller shutter (ground-adjacent look)
+        ctx.fillStyle = 'rgba(118,110,100,0.6)'; ctx.fillRect(wx - 4, wy - 6, ww + 8, wh + 8);
+        ctx.strokeStyle = 'rgba(60,55,48,0.5)'; ctx.lineWidth = 1;
+        for (let k = 0; k < 7; k++) { ctx.beginPath(); ctx.moveTo(wx - 4, wy + k * 6); ctx.lineTo(wx + ww + 4, wy + k * 6); ctx.stroke(); }
+      } else if (roll < 0.74) {                            // rust-streaked tin patch
+        ctx.fillStyle = 'rgba(150,142,130,0.5)'; ctx.fillRect(wx, wy, ww, wh);
+        ctx.strokeStyle = 'rgba(126,90,60,0.4)'; ctx.lineWidth = 2;
+        for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(wx + 8 + k * 16, wy); ctx.lineTo(wx + 4 + k * 18, wy + wh); ctx.stroke(); }
+        ctx.fillStyle = 'rgba(122,74,42,0.28)'; ctx.fillRect(wx + 30, wy + 8, 8, wh - 12);
+      } else if (roll < 0.84) {                            // big sign-band shadow + vent
+        ctx.fillStyle = 'rgba(40,40,44,0.35)'; ctx.fillRect(wx, wy, ww, 12);
+        ctx.fillStyle = 'rgba(70,66,60,0.6)'; ctx.fillRect(wx + 24, wy + 22, 14, 10);
+      } else {                                             // lit office at dusk
+        drawWindow(true); frameSill();
+      }
+    } else if (roll < 0.09) {                                   // lit at dusk
       drawWindow(true); frameSill();
     } else if (roll < 0.27) {                            // plain glass
       drawWindow(false); frameSill();

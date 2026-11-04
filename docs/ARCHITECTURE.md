@@ -128,3 +128,31 @@ docs/                  PROJECT_PLAN, ARCHITECTURE, DEVELOPMENT, MILESTONE2_PLAN
 **Budgets (M3)**: draw calls target ≤ 80 on Redmi 9 (smoke asserts < 100 desktop);
 crowd 8 + traffic 8 + chunks 3×9 + landmarks 5 + sky 2 + hero ~12 ≈ 70 worst case;
 new textures: 1× sign atlas (1024²) + 1× 128 face + 1× 64 shirt; fonts 2 × ~220 KB.
+
+---
+
+## Milestone 4 additions (geo-referenced world, cinematic layer)
+
+- **Route v2** (`data/routes/farmgate-saarc.json`, schema 2): centreline fitted to real
+  OpenStreetMap geometry, named `junctions[]`, `geo` provenance block, landmarks placed on the
+  measured corridor (market + Khamarbari + expressway on the LEFT/rail side, as in reality).
+- **Materials**: `RoadTexture.js` (one 512² surface atlas: asphalt patches/pavers/median) mapped
+  by the new per-chunk `pave` mesh; TWO facade atlases (`FacadeTexture('residential'|'commercial')`)
+  selected by per-building **archetype** weights in the route JSON.
+- **Archetypes** (`RouteModel.buildings` → `ChunkBuilder.buildings`): institutional, midrise,
+  commercial, marketBlock, halfbuilt — each with its own silhouette kits (porticos, balcony
+  rows, parapets, sign stacks, rebar + bamboo + netting).
+- **Landmarks v2** (all in `src/world/landmarks/`): 2023 Farmgate footbridge (L-shape + tensile
+  canopy + plaza), parametric MRT-6 stations (readable nameboards via the sign atlas, portal
+  pillar at Farmgate), Elevated Expressway + FDC ramp, Khamarbari complex, Kawran Bazar zone
+  (DNCC block, fish market, parked buses, rail + level crossing, Mughal mosque, FDC skeleton,
+  BDBL/BSEC towers), dry SAARC fountain (tin fence + poster ring), Sonargaon gardens. Builders
+  now emit into TWO builders: `(g, sg)` — `sg` quads land in the readable-sign mesh.
+- **Lighting**: ACES tone mapping + Dhaka haze palette; blob contact shadows on every tier
+  (`BlobShadow.js`), one 1024px directional shadow map on the high tier only.
+- **Camera v2** (`CameraRig.js`): critically-damped springs on position + look target,
+  handheld sway, steer roll/drift, near-miss FOV punch, landmark reveal dollies, skippable
+  opening arc. Control is never modified by camera state.
+- **Protagonist**: sculpted sphere head with painted face (traits from `likeliness.js` —
+  placeholders until the reference photographs arrive), elbows + hands, pelvis/shoulder
+  counter-rotation from the shared walk cycle.

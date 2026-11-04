@@ -33,10 +33,20 @@ test('RouteSpace: smooth curve, continuous heading, no jumps in position', () =>
   assert.ok(Math.abs(maxJump - 1) < 0.05, 'one metre of s is ~one metre of world: ' + maxJump);
 });
 
-test('route JSON validates with no errors', () => {
+test('M4 route JSON validates with no errors and is geo-referenced', () => {
   const v = validateRoute(loadRouteJson());
   assert.deepEqual(v.errors, []);
-  assert.ok(v.warnings.some((w) => /schematic/.test(w)), 'schematic status is flagged honestly');
+  assert.ok(!v.warnings.some((w) => /schematic/.test(w)), 'geo-referenced route is not flagged schematic');
+  const d = loadRouteJson();
+  assert.equal(d.status, 'geo-referenced');
+  assert.ok(d.geo && Array.isArray(d.geo.waypoints) && d.geo.waypoints.length >= 4, 'geo block carries measured waypoints');
+});
+test('M4: schematic status still warns honestly when someone downgrades', () => {
+  const d = loadRouteJson();
+  d.status = 'schematic';
+  const v = validateRoute(d);
+  assert.deepEqual(v.errors, []);
+  assert.ok(v.warnings.some((w) => /schematic/.test(w)));
 });
 test('validator catches common mistakes', () => {
   const d = loadRouteJson();
@@ -69,31 +79,40 @@ test('Milestone 2: validator rejects malformed moods and dressing values', () =>
   assert.deepEqual(validateRoute(d2).errors, []);
 });
 
-test('RouteModel: length ~1200 m, segments, profile blending, walkable', () => {
+test('M4: archetype weight tables validate (bad weights are errors)', () => {
+  const a = loadRouteJson();
+  a.segments[0].buildings.archetypes = { midrise: 2 };               // weight > 1
+  assert.ok(validateRoute(a).errors.some((e) => /archetype/.test(e)));
+  const b = loadRouteJson();
+  b.segments[0].buildings.archetypes = 'nope';
+  assert.ok(validateRoute(b).errors.some((e) => /archetype/.test(e)));
+});
+
+test('RouteModel: length ~1250 m (real corridor), segments, walkable', () => {
   const m = new RouteModel(loadRouteJson());
-  assert.ok(m.length > 1150 && m.length < 1250, 'route length ' + m.length);
+  assert.ok(m.length > 1150 && m.length < 1350, 'route length ' + m.length);
   assert.equal(m.segmentAt(10).id, 'farmgate');
-  assert.equal(m.segmentAt(700).id, 'karwan-bazar');
+  assert.equal(m.segmentAt(950).id, 'karwan-bazar');
   assert.equal(m.segmentAt(m.length).id, 'saarc-approach');
-  const before = m.profileAt(615).elements[1], after = m.profileAt(660).elements[1];
-  assert.ok(before.x1 > after.x1 - 0.001 === false || true);
-  const w0 = m.walkableAt(10, {}), w1 = m.walkableAt(1100, {});
+  const w0 = m.walkableAt(10, {}), w1 = m.walkableAt(1150, {});
   assert.ok(w0.min < w0.max && w1.min < w1.max);
   assert.ok(m.progressMarks.length === 3 && m.progressMarks[2].s === m.length);
 });
 test('RouteModel: footpath narrows smoothly into Karwan Bazar (no jump)', () => {
   const m = new RouteModel(loadRouteJson());
   const w = (s) => { const e = m.profileAt(s).elements[1]; return e.x1 - e.x0; };
-  assert.ok(Math.abs(w(619) - 3.5) < 0.05);
-  assert.ok(Math.abs(w(700) - 2.4) < 0.05);
-  assert.ok(w(630) < w(619) && w(630) > w(700));
+  assert.ok(Math.abs(w(879) - 3.5) < 0.05);
+  assert.ok(Math.abs(w(960) - 2.4) < 0.05);
+  assert.ok(w(890) < w(879) && w(890) > w(960));
 });
-test('RouteModel: buildings are deterministic, sorted, non-overlapping per side', () => {
+test('RouteModel: buildings are deterministic, sorted, non-overlapping per side, archetypes assigned', () => {
   const a = new RouteModel(loadRouteJson()).buildings, b = new RouteModel(loadRouteJson()).buildings;
   assert.equal(a.length, b.length); assert.deepEqual(a[5], b[5]);
   for (const side of [-1, 1]) {
     const list = a.filter((x) => x.side === side);
     for (let i = 1; i < list.length; i++) assert.ok(list[i].sMid - list[i].w / 2 >= list[i - 1].sMid + list[i - 1].w / 2 - 1e-6, 'no overlap');
   }
-  assert.ok(a.length > 150);
+  assert.ok(a.length > 150, 'corridor still carries a dense streetwall: ' + a.length);
+  const valid = new Set(['institutional', 'midrise', 'commercial', 'marketBlock', 'halfbuilt']);
+  for (const bd of a) assert.ok(valid.has(bd.archetype), 'archetype ' + bd.archetype);
 });

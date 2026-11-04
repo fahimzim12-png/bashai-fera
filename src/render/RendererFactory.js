@@ -26,6 +26,15 @@ export function createRenderer(canvas, { antialias, onLost, onRestored }) {
     powerPreference: 'high-performance',
   });
   renderer.setClearColor(0xe8c9a2, 1);
+  // Milestone 4: filmic tone mapping grounds the whole Dhaka palette (no more raw sRGB
+  // blowout on sunlit concrete) and the output colour space is pinned explicitly.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // Shadow MAP support is always on; the light's castShadow flag (per quality tier) decides
+  // whether any shadow pass actually runs. Keeping this constant avoids material recompiles.
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   // A phone can discard the GPU context when the app is backgrounded. Handle it instead of showing a black screen.
   canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); onLost && onLost(); }, false);
   canvas.addEventListener('webglcontextrestored', () => { onRestored && onRestored(); }, false);
